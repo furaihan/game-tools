@@ -1,0 +1,115 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --background: oklch(0.09 0.01 350);
+  --foreground: oklch(0.93 0.005 50);
+  --card: oklch(0.13 0.015 350);
+  --card-foreground: oklch(0.93 0.005 50);
+  --popover: oklch(0.17 0.02 350);
+  --popover-foreground: oklch(0.93 0.005 50);
+  --primary: oklch(0.68 0.22 355);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.2 0.02 350);
+  --secondary-foreground: oklch(0.93 0.005 50);
+  --muted: oklch(0.17 0.02 350);
+  --muted-foreground: oklch(0.55 0.03 350);
+  --accent: oklch(0.68 0.22 355);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.2 0.02 350);
+  --input: oklch(0.2 0.02 350);
+  --ring: oklch(0.68 0.22 355);
+  --chart-1: oklch(0.68 0.22 355);
+  --chart-2: oklch(0.78 0.12 80);
+  --chart-3: oklch(0.6 0.12 0);
+  --chart-4: oklch(0.55 0.1 300);
+  --chart-5: oklch(0.5 0.15 200);
+  --radius: 0.5rem;
+}
+
+.light {
+  --background: oklch(0.97 0.008 50);
+  --foreground: oklch(0.15 0.01 350);
+  --card: oklch(0.95 0.01 50);
+  --card-foreground: oklch(0.15 0.01 350);
+  --popover: oklch(0.95 0.01 50);
+  --popover-foreground: oklch(0.15 0.01 350);
+  --primary: oklch(0.6 0.22 355);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.9 0.02 50);
+  --secondary-foreground: oklch(0.15 0.01 350);
+  --muted: oklch(0.92 0.01 50);
+  --muted-foreground: oklch(0.5 0.02 350);
+  --accent: oklch(0.6 0.22 355);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.85 0.02 350);
+  --input: oklch(0.85 0.02 350);
+  --ring: oklch(0.6 0.22 355);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: oklch(0.2 0.02 350);
+    border-radius: 2px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.55 0.03 350);
+  }
+}
