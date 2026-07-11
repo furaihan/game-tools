@@ -8,6 +8,7 @@ const navItems = [
   { href: "/", label: "Home" },
   { href: "/7dtd/biome-map-converter", label: "Biome Map Converter" },
   { href: "/7dtd/biome-layout-generator", label: "Biome Layout Generator" },
+  { href: "/7dtd/sandbox-codec", label: "Sandbox Codec" },
 ];
 
 function ThemeToggle({
