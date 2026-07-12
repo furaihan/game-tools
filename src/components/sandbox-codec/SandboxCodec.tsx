@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { decodeSandboxCode, encodeSandboxCode, getDisabledOptionIds } from '@/lib/sandbox-codec/codec'
-import { sandboxOptions } from '@/lib/sandbox-codec/sandboxOptions'
+import { sandboxOptions, getDisplayName } from '@/lib/sandbox-codec/sandboxOptions'
 import type { SandboxOption } from '@/lib/sandbox-codec/sandboxOptions'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -92,7 +92,7 @@ export function SandboxCodec() {
     for (const [cat, opts] of Object.entries(groupedOptions)) {
       const filtered = opts.filter(
         (opt) =>
-          opt.displayName.toLowerCase().includes(lowerQuery) ||
+          getDisplayName(opt.enumName).toLowerCase().includes(lowerQuery) ||
           opt.enumName.toLowerCase().includes(lowerQuery)
       )
       if (filtered.length > 0) groups[cat] = filtered
@@ -107,7 +107,7 @@ export function SandboxCodec() {
     for (const [cat, opts] of Object.entries(groupedChangedOptions)) {
       const filtered = opts.filter(
         (opt) =>
-          opt.displayName.toLowerCase().includes(lowerQuery) ||
+          getDisplayName(opt.enumName).toLowerCase().includes(lowerQuery) ||
           opt.enumName.toLowerCase().includes(lowerQuery)
       )
       if (filtered.length > 0) groups[cat] = filtered

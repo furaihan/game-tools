@@ -1,4 +1,4 @@
-import type { SandboxOption } from '@/lib/sandbox-codec/sandboxOptions'
+import { type SandboxOption, getDisplayName } from '@/lib/sandbox-codec/sandboxOptions'
 import { OptionControl } from './OptionControl'
 import { Badge } from '@/components/ui/badge'
 
@@ -17,7 +17,7 @@ export function OptionRow({ option, currentValueIndex, isDisabled, isReadOnly, o
     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-card text-card-foreground shadow-sm gap-4 transition-all">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">{option.displayName}</span>
+          <span className="font-semibold">{getDisplayName(option.enumName)}</span>
           {!isDefault && <Badge variant="secondary">Modified</Badge>}
           {isDisabled && <Badge variant="outline" className="text-muted-foreground">Disabled</Badge>}
         </div>

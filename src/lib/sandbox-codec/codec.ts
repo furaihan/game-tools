@@ -1,4 +1,5 @@
-import { sandboxOptions, optionsById } from './sandboxOptions';
+import { sandboxOptions, optionsById, getDisplayName } from './sandboxOptions';
+import { valueSets } from './valueSets';
 
 // Value index (0-25) -> single char A-Z
 export function indexToAlpha(index: number): string {
@@ -123,9 +124,10 @@ export function decodeSandboxCode(code: string): { values: Record<number, number
             continue;
         }
         
-        const validItem = option.valueSet.find(v => v.index === valueIdx);
-        if (!validItem) {
-            warnings.push(`Skipped invalid value index ${valueIdx} (code ${valueChar}) for option '${option.displayName}'.`);
+        const vs = valueSets[option.valueSetName];
+        const vsValues = vs?.floatValues ?? vs?.intValues ?? vs?.boolValues ?? [];
+        if (valueIdx < 0 || valueIdx >= vsValues.length) {
+            warnings.push(`Skipped invalid value index ${valueIdx} (code ${valueChar}) for option '${getDisplayName(option.enumName)}'.`);
             continue;
         }
         
