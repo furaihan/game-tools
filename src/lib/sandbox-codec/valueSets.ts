@@ -46,7 +46,7 @@ export function getValueSetDisplay(valueSetName: string, type: string, index: nu
 
     const altText = vs.alternateDisplayValues?.[index];
     const displayVal = altText ?? (
-        type === 'float' ? (rawValue as number) * 100 : String(rawValue)
+        type === 'float' ? String(Math.round((rawValue as number) * 100)) : String(rawValue)
     );
 
     const formatKey = vs.displayValues?.[index] ?? vs.displayFormat;
