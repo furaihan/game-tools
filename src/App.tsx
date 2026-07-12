@@ -35,6 +35,14 @@ export default function App() {
   const location = useLocation();
   const { isDark, toggle } = useDarkMode();
 
+  const deployedAt = import.meta.env.VITE_DEPLOYED_TIMESTAMP;
+  const formattedDate = deployedAt
+    ? new Date(deployedAt).toLocaleString("id-ID", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "Unknown";
+
   return (
     <TooltipProvider delay={300}>
       <div className="min-h-screen flex flex-col">
@@ -67,8 +75,11 @@ export default function App() {
         <main className="flex flex-1 min-h-0 min-w-0 overflow-auto">
           <Outlet />
         </main>
+        <footer className="flex py-2 items-center justify-end border-t bg-background px-4 text-xs text-muted-foreground">
+          &#10004; Deployed at:{" "}
+          {formattedDate}
+        </footer>
       </div>
     </TooltipProvider>
   );
 }
-
