@@ -195,12 +195,13 @@ export function CanvasViewer({ imageData, label, onCanvasClick, collapsible, onT
         <span className="font-mono text-[11px] text-muted-foreground">
           {imageData ? `${imageData.width}x${imageData.height} @ ${Math.round(zoom * 100)}%` : ''}
         </span>
-        <button
-          className="text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+        <Button
+          variant="ghost"
+          className="h-auto p-0 text-[11px] text-muted-foreground hover:bg-transparent hover:text-foreground"
           onClick={fitToScreen}
         >
           Fit
-        </button>
+        </Button>
       </div>
     </div>
   )

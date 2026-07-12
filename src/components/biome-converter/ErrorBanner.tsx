@@ -1,4 +1,5 @@
 import { Alert, AlertTitle, AlertAction } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import { TriangleAlert, X } from 'lucide-react'
 import { usePipelineContext } from '@/context/pipeline-context'
 import { useEffect, useRef } from 'react'
@@ -24,9 +25,14 @@ export function ErrorBanner() {
       <TriangleAlert className="h-4 w-4" />
       <AlertTitle>{error}</AlertTitle>
       <AlertAction>
-        <button onClick={() => setError(null)} className="p-0.5 hover:opacity-70 transition-opacity">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => setError(null)}
+        >
           <X className="h-3.5 w-3.5" />
-        </button>
+        </Button>
       </AlertAction>
     </Alert>
   )

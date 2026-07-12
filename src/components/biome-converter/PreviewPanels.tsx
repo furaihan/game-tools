@@ -3,6 +3,7 @@ import { usePipelineContext } from '@/context/pipeline-context'
 import { CanvasViewer } from './CanvasViewer'
 import { StatisticsPanel } from './StatisticsPanel'
 import { ChevronDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function PreviewPanels() {
   const { originalImage, workingImage, processedImage } = usePipelineContext()
@@ -30,13 +31,14 @@ export function PreviewPanels() {
       </div>
 
       {!showOriginal && originalImage && (
-        <button
-          className="flex items-center justify-center gap-1 rounded-lg border border-dashed py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+        <Button
+          variant="outline"
+          className="h-auto gap-1 border-dashed py-1.5 text-xs"
           onClick={() => setShowOriginal(true)}
         >
           <ChevronDown className="h-3 w-3" />
           Show image
-        </button>
+        </Button>
       )}
 
       {showStats && <StatisticsPanel />}

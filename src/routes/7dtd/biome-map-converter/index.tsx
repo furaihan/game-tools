@@ -92,13 +92,13 @@ function BiomeMapConverter() {
         <div className="border-t px-4 py-3">
           <Toolbar />
           <div className="mt-3">
-            <button
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            <Button
+              className="w-full gap-2"
               onClick={() => setShowExportDialog(true)}
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-4 w-4" data-icon="inline-start" />
               Export biomes.png
-            </button>
+            </Button>
           </div>
         </div>
       </aside>
