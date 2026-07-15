@@ -1,31 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Gamepad2, Map, LayoutGrid, Code2 } from 'lucide-react'
+import { Gamepad2 } from 'lucide-react'
+import { tools } from '@/lib/tool-list'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
 })
-
-const tools = [
-  {
-    title: 'Biome Map Converter',
-    description: 'Convert images into 7 Days to Die biome maps',
-    href: '/7dtd/biome-map-converter',
-    icon: Map,
-  },
-  {
-    title: 'Biome Layout Generator',
-    description: 'Generate seedable biome blueprint maps with multiple algorithms',
-    href: '/7dtd/biome-layout-generator',
-    icon: LayoutGrid,
-  },
-  {
-    title: 'Sandbox Codec',
-    description: 'Encode and decode 7 Days to Die V3.0 sandbox server preset codes',
-    href: '/7dtd/sandbox-codec',
-    icon: Code2,
-  },
-]
 
 function HomePage() {
   return (

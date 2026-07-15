@@ -34,7 +34,6 @@ export function OptionRow({ option, currentValueIndex, isDisabled, isReadOnly, o
           {!isDefault && <Badge variant="secondary">Modified</Badge>}
           {isDisabled && <Badge variant="outline" className="text-muted-foreground">Disabled</Badge>}
         </div>
-        <p className="text-xs text-muted-foreground font-mono">{option.enumName}</p>
       </div>
       <div className="flex-shrink-0">
         <OptionControl
