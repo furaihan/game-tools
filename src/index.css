@@ -39,7 +39,6 @@
 }
 
 :root {
-  /* LIGHT MODE: "Cyprus" */
   --background: oklch(0.94 0.02 85);
   --foreground: oklch(0.35 0.12 170);
   --card: oklch(0.97 0.01 85);
@@ -63,7 +62,6 @@
 }
 
 .dark {
-  /* DARK MODE: "Tiffany" */
   --background: oklch(0.11 0.003 0);
   --foreground: oklch(0.95 0.005 100);
   --card: oklch(0.14 0.004 0);
