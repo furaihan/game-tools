@@ -2,7 +2,7 @@ import { Outlet, Link, useLocation } from "@tanstack/react-router";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, Gamepad2 } from "lucide-react";
-import { useDarkMode } from "@/hooks/use-dark-mode";
+import { ThemeProvider, useTheme } from "@/context/theme-context";
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -11,13 +11,8 @@ const navItems = [
   { href: "/7dtd/sandbox-codec", label: "Sandbox Codec" },
 ];
 
-function ThemeToggle({
-  isDark,
-  toggle,
-}: {
-  isDark: boolean;
-  toggle: () => void;
-}) {
+function ThemeToggle() {
+  const { isDark, toggle } = useTheme();
   return (
     <Button
       variant="ghost"
@@ -33,7 +28,6 @@ function ThemeToggle({
 
 export default function App() {
   const location = useLocation();
-  const { isDark, toggle } = useDarkMode();
 
   const deployedAt = import.meta.env.VITE_DEPLOYED_TIMESTAMP;
   const formattedDate = deployedAt
@@ -44,42 +38,44 @@ export default function App() {
     : "Unknown";
 
   return (
-    <TooltipProvider delay={300}>
-      <div className="min-h-screen flex flex-col">
-        <header className="flex h-14 items-center justify-between border-b bg-background px-4">
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <Gamepad2 className="h-5 w-5 text-primary" />
-              <h1 className="text-sm font-semibold tracking-tight">
-                Game Tools
-              </h1>
+    <ThemeProvider>
+      <TooltipProvider delay={300}>
+        <div className="min-h-screen flex flex-col">
+          <header className="flex h-14 items-center justify-between border-b bg-background px-4">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-2">
+                <Gamepad2 className="h-5 w-5 text-primary" />
+                <h1 className="text-sm font-semibold tracking-tight">
+                  Game Tools
+                </h1>
+              </div>
+              <nav className="flex items-center gap-1">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${
+                      location.pathname === item.href
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
             </div>
-            <nav className="flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={`text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${
-                    location.pathname === item.href
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <ThemeToggle isDark={isDark} toggle={toggle} />
-        </header>
-        <main className="flex flex-1 min-h-0 min-w-0 overflow-auto">
-          <Outlet />
-        </main>
-        <footer className="flex py-2 items-center justify-end border-t bg-background px-4 text-xs text-muted-foreground">
-          &#10004; Deployed at:{" "}
-          {formattedDate}
-        </footer>
-      </div>
-    </TooltipProvider>
+            <ThemeToggle />
+          </header>
+          <main className="flex flex-1 min-h-0 min-w-0 overflow-auto">
+            <Outlet />
+          </main>
+          <footer className="flex py-2 items-center justify-end border-t bg-background px-4 text-xs text-muted-foreground">
+            &#10004; Deployed at:{" "}
+            {formattedDate}
+          </footer>
+        </div>
+      </TooltipProvider>
+    </ThemeProvider>
   );
 }
