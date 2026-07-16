@@ -12,13 +12,6 @@ export type Tool = {
 
 export const tools: Tool[] = [
   {
-    title: 'Biome Map Converter',
-    description: 'Convert biome maps for 7 Days to Die',
-    href: '/7dtd/biome-map-converter',
-    gameCategory: '7 Days to Die',
-    icon: Map
-  },
-  {
     title: 'Biome Layout Generator',
     description: 'Generate biome layouts for 7 Days to Die',
     href: '/7dtd/biome-layout-generator',

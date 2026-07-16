@@ -31,3 +31,9 @@ __pycache__/
 .env.*
 .ref
 .claude
+
+# Graphify
+.graphify/
+graphify-out/
+.graphify_*.json
+.graphify_python

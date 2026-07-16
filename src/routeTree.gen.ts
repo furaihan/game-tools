@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as R7dtdSandboxCodecIndexRouteImport } from './routes/7dtd/sandbox-codec/index'
-import { Route as R7dtdBiomeMapConverterIndexRouteImport } from './routes/7dtd/biome-map-converter/index'
 import { Route as R7dtdBiomeLayoutGeneratorIndexRouteImport } from './routes/7dtd/biome-layout-generator/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -24,12 +23,6 @@ const R7dtdSandboxCodecIndexRoute = R7dtdSandboxCodecIndexRouteImport.update({
   path: '/7dtd/sandbox-codec/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const R7dtdBiomeMapConverterIndexRoute =
-  R7dtdBiomeMapConverterIndexRouteImport.update({
-    id: '/7dtd/biome-map-converter/',
-    path: '/7dtd/biome-map-converter/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const R7dtdBiomeLayoutGeneratorIndexRoute =
   R7dtdBiomeLayoutGeneratorIndexRouteImport.update({
     id: '/7dtd/biome-layout-generator/',
@@ -40,47 +33,31 @@ const R7dtdBiomeLayoutGeneratorIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/7dtd/biome-layout-generator/': typeof R7dtdBiomeLayoutGeneratorIndexRoute
-  '/7dtd/biome-map-converter/': typeof R7dtdBiomeMapConverterIndexRoute
   '/7dtd/sandbox-codec/': typeof R7dtdSandboxCodecIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/7dtd/biome-layout-generator': typeof R7dtdBiomeLayoutGeneratorIndexRoute
-  '/7dtd/biome-map-converter': typeof R7dtdBiomeMapConverterIndexRoute
   '/7dtd/sandbox-codec': typeof R7dtdSandboxCodecIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/7dtd/biome-layout-generator/': typeof R7dtdBiomeLayoutGeneratorIndexRoute
-  '/7dtd/biome-map-converter/': typeof R7dtdBiomeMapConverterIndexRoute
   '/7dtd/sandbox-codec/': typeof R7dtdSandboxCodecIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/7dtd/biome-layout-generator/'
-    | '/7dtd/biome-map-converter/'
-    | '/7dtd/sandbox-codec/'
+  fullPaths: '/' | '/7dtd/biome-layout-generator/' | '/7dtd/sandbox-codec/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/7dtd/biome-layout-generator'
-    | '/7dtd/biome-map-converter'
-    | '/7dtd/sandbox-codec'
+  to: '/' | '/7dtd/biome-layout-generator' | '/7dtd/sandbox-codec'
   id:
-    | '__root__'
-    | '/'
-    | '/7dtd/biome-layout-generator/'
-    | '/7dtd/biome-map-converter/'
-    | '/7dtd/sandbox-codec/'
+    '__root__' | '/' | '/7dtd/biome-layout-generator/' | '/7dtd/sandbox-codec/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   R7dtdBiomeLayoutGeneratorIndexRoute: typeof R7dtdBiomeLayoutGeneratorIndexRoute
-  R7dtdBiomeMapConverterIndexRoute: typeof R7dtdBiomeMapConverterIndexRoute
   R7dtdSandboxCodecIndexRoute: typeof R7dtdSandboxCodecIndexRoute
 }
 
@@ -100,13 +77,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof R7dtdSandboxCodecIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/7dtd/biome-map-converter/': {
-      id: '/7dtd/biome-map-converter/'
-      path: '/7dtd/biome-map-converter'
-      fullPath: '/7dtd/biome-map-converter/'
-      preLoaderRoute: typeof R7dtdBiomeMapConverterIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/7dtd/biome-layout-generator/': {
       id: '/7dtd/biome-layout-generator/'
       path: '/7dtd/biome-layout-generator'
@@ -120,7 +90,6 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   R7dtdBiomeLayoutGeneratorIndexRoute: R7dtdBiomeLayoutGeneratorIndexRoute,
-  R7dtdBiomeMapConverterIndexRoute: R7dtdBiomeMapConverterIndexRoute,
   R7dtdSandboxCodecIndexRoute: R7dtdSandboxCodecIndexRoute,
 }
 export const routeTree = rootRouteImport
