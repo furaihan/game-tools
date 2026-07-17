@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BiomeGeneratorProvider } from '@/context/biome-generator-context'
-import { GeneratorControls } from '@/components/biome-generator/GeneratorControls'
-import { CanvasPreview } from '@/components/biome-generator/CanvasPreview'
-import { BiomeList } from '@/components/biome-generator/BiomeList'
+import { BiomeGeneratorProvider } from '@/features/biome-generator/context/biome-generator-context'
+import { GeneratorControls } from '@/features/biome-generator/components/GeneratorControls'
+import { CanvasPreview } from '@/features/biome-generator/components/CanvasPreview'
+import { BiomeList } from '@/features/biome-generator/components/BiomeList'
 
 export const Route = createFileRoute('/7dtd/biome-layout-generator/')({
   component: BiomeLayoutGeneratorWrapper,

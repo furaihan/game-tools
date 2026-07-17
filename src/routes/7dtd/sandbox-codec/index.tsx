@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { SandboxCodec } from '@/components/sandbox-codec/SandboxCodec'
+import { SandboxCodec } from '@/features/sandbox-codec/components/SandboxCodec'
 
 export const Route = createFileRoute('/7dtd/sandbox-codec/')({
   validateSearch: (search: Record<string, unknown>): { code?: string } => ({

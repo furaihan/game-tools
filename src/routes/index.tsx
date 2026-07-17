@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Gamepad2, PandaIcon } from 'lucide-react'
-import { tools } from '@/lib/tool-list'
+import { tools } from '@/shared/tool-registry/tool-list'
 
 export const Route = createFileRoute('/')({
   component: HomePage,

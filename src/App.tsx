@@ -1,15 +1,15 @@
 import { Outlet, Link, useLocation } from "@tanstack/react-router";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/shared/ui/tooltip";
+import { Button } from "@/shared/ui/button";
 import { Moon, Sun, Gamepad2, ChevronDown } from "lucide-react";
-import { ThemeProvider, useTheme } from "@/context/theme-context";
-import { tools } from "@/lib/tool-list";
+import { ThemeProvider, useTheme } from "@/app/theme/theme-context";
+import { tools } from "@/shared/tool-registry/tool-list";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/ui/dropdown-menu";
 
 function ThemeToggle() {
   const { isDark, toggle } = useTheme();
