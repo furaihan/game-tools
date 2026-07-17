@@ -1,4 +1,4 @@
-import { type SandboxOption, getDisplayName, getDescription } from '@/lib/sandbox-codec/sandboxOptions'
+import { type SandboxOption, getDisplayName, getDescription } from '@/core/sandbox-codec/sandboxOptions'
 import { OptionControl } from './OptionControl'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'

@@ -1,4 +1,4 @@
-import type { SandboxOption } from '@/lib/sandbox-codec/sandboxOptions'
+import type { SandboxOption } from '@/core/sandbox-codec/sandboxOptions'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { OptionRow } from './OptionRow'

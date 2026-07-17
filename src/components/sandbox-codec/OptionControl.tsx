@@ -1,5 +1,5 @@
-import type { SandboxOption } from '@/lib/sandbox-codec/sandboxOptions'
-import { getValueSetValues, getValueSetDisplay } from '@/lib/sandbox-codec/valueSets'
+import type { SandboxOption } from '@/core/sandbox-codec/sandboxOptions'
+import { getValueSetValues, getValueSetDisplay } from '@/core/sandbox-codec/valueSets'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
