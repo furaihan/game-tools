@@ -14,6 +14,7 @@ self.onmessage = (e: MessageEvent<{
   const { width, height, seed, biomes, mode, algorithm, noiseConfig } = e.data
 
   try {
+    console.log(`Generating biome map with ${mode} mode and ${algorithm} algorithm...`)
     let generator: { generate(w: number, h: number, s: number, b: BiomeDef[]): BiomeMap }
 
     if (mode === "Noise") {

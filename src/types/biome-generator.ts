@@ -22,7 +22,6 @@ export type AlgorithmName =
   | "Random Walkers"
   | "Random Blobs"
   | "Cellular Growth"
-  | "Layered Stamps"
   | "Probability Fields"
   | "Recursive Split"
   | "Weighted Expansion"

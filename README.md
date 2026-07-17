@@ -7,7 +7,7 @@ A high-performance, modular web-based toolkit for **7 Days to Die (7DTD)** serve
 ### Biome Layout Generator (`/7dtd/biome-layout-generator`)
 A highly configurable procedural generation engine that allows creators to instantly design regional biome structures.
 
-* **10 Generation Algorithms**: Craft layouts using Random Seeds, Territory Expansion, Random Walkers, Random Blobs, Cellular Growth, Layered Stamps, Probability Fields, Recursive Split, Weighted Expansion, and Biome Islands.
+* **9 Generation Algorithms**: Craft layouts using Random Seeds, Territory Expansion, Random Walkers, Random Blobs, Cellular Growth, Probability Fields, Recursive Split, Weighted Expansion, and Biome Islands.
 * **Noise Mode**: Utilize Simplex, Perlin, Fractal, or Worley noise fields with configurable frequency, octaves, persistence, and lacunarity.
 * **Multithreaded Processing**: Offloads heavy noise calculations and median filtering to Web Workers so the UI never drops a frame.
 * **Smart Presets**: Out-of-the-box configurations for 7 Days to Die (5 biomes), Minecraft (7 biomes), Valheim (9 biomes), and Standard Earth (9 biomes).
