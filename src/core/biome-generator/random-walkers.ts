@@ -4,10 +4,11 @@ import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
 export class RandomWalkersGenerator implements BiomeGenerator {
   generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
-    const data = new Uint8Array(width * height)
+    const totalPixels = width * height
+    const UNASSIGNED = 255
+    const data = new Uint8Array(totalPixels).fill(UNASSIGNED)
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
-    const totalPixels = width * height
 
     const numWalkers = Math.max(biomes.length, 50)
     const walkers: { x: number; y: number; biome: number; steps: number }[] = []
@@ -32,26 +33,24 @@ export class RandomWalkersGenerator implements BiomeGenerator {
       }
     }
 
-    // Fill unassigned via nearest neighbor
-    const unassigned: number[] = []
+    // Fill unassigned via BFS
+    const queue: number[] = []
     for (let i = 0; i < totalPixels; i++) {
-      if (data[i] === 0) unassigned.push(i)
+      if (data[i] !== UNASSIGNED) queue.push(i)
     }
-    for (const idx of unassigned) {
+    const bfsDirs = [-width, width, -1, 1]
+    while (queue.length > 0) {
+      const idx = queue.shift()!
       const x = idx % width
-      const y = Math.floor(idx / width)
-      let minDist = Infinity
-      let best = 0
-      for (const w of walkers) {
-        const dx = w.x - x
-        const dy = w.y - y
-        const dist = dx * dx + dy * dy
-        if (dist < minDist) {
-          minDist = dist
-          best = w.biome
+      for (const d of bfsDirs) {
+        const n = idx + d
+        if (n < 0 || n >= totalPixels) continue
+        if (Math.abs((n % width) - x) > 1) continue
+        if (data[n] === UNASSIGNED) {
+          data[n] = data[idx]
+          queue.push(n)
         }
       }
-      data[idx] = best
     }
 
     return { width, height, seed, data }

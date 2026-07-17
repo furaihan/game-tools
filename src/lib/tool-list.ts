@@ -1,3 +1,6 @@
+import type { FileRouteTypes } from '@/routeTree.gen'
+
+type RoutePaths = FileRouteTypes['to']
 import { Map, LayoutGrid, Code2 } from 'lucide-react'
 
 export type GameCategory = '7 Days to Die' | 'Minecraft' | 'Other'
@@ -5,7 +8,7 @@ export type GameCategory = '7 Days to Die' | 'Minecraft' | 'Other'
 export type Tool = {
   title: string
   description: string
-  href: string
+  href: RoutePaths
   gameCategory: GameCategory
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }

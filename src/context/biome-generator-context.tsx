@@ -25,7 +25,7 @@ interface BiomeGeneratorActions {
   loadPreset: (name: string) => void
   randomizeSeed: () => void
   generate: () => void
-  applyMedianBlur: () => void
+  applyMajorityFilter: () => void
   exportPNG: () => void
   copySeed: () => void
   resetToDefaults: () => void
@@ -189,7 +189,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     })
   }, [biomes, seed, resolution, algorithm, mode, noiseConfig])
 
-  const applyMedianBlur = useCallback(() => {
+  const applyMajorityFilter = useCallback(() => {
     if (!biomeMap) return
     setIsFiltering(true)
 
@@ -280,7 +280,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
         isGenerating, isFiltering, isFiltered,
         error,
         loadPreset, randomizeSeed,
-        generate, applyMedianBlur, exportPNG, copySeed,
+        generate, applyMajorityFilter, exportPNG, copySeed,
         resetToDefaults,
       }}
 

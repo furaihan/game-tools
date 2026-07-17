@@ -1,12 +1,14 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { decodeSandboxCode, encodeSandboxCode, getDisabledOptionIds } from '@/lib/sandbox-codec/codec'
-import { sandboxOptions, getDisplayName } from '@/lib/sandbox-codec/sandboxOptions'
+import { sandboxOptions, optionsById, getDisplayName } from '@/lib/sandbox-codec/sandboxOptions'
 import type { SandboxOption } from '@/lib/sandbox-codec/sandboxOptions'
+import { valueSets } from '@/lib/sandbox-codec/valueSets'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
-import { RefreshCw, Code2, Settings2 } from 'lucide-react'
+import { Shuffle, RefreshCw, Code2, Settings2 } from 'lucide-react'
 import { LiveCodeCard } from './LiveCodeCard'
 import { SearchBar } from './SearchBar'
 import { DecodePanel } from './DecodePanel'
@@ -17,7 +19,17 @@ const defaultValues = sandboxOptions.reduce((acc, opt) => {
   return acc
 }, {} as Record<number, number>)
 
-export function SandboxCodec() {
+function getValueSetLength(option: SandboxOption): number {
+  const vs = valueSets[option.valueSetName]
+  if (!vs) return 0
+  return (vs.floatValues ?? vs.intValues ?? vs.boolValues ?? []).length
+}
+
+interface SandboxCodecProps {
+  urlCode?: string
+}
+
+export function SandboxCodec({ urlCode }: SandboxCodecProps) {
   const [values, setValues] = useState<Record<number, number>>(defaultValues)
   const [decodeInput, setDecodeInput] = useState('')
   const [decodeWarnings, setDecodeWarnings] = useState<string[]>([])
@@ -26,6 +38,34 @@ export function SandboxCodec() {
 
   const currentCode = useMemo(() => encodeSandboxCode(values), [values])
   const disabledOptionIds = useMemo(() => getDisabledOptionIds(values), [values])
+
+  const initializedFromUrl = useRef(false)
+  const navigate = useNavigate({ from: '/7dtd/sandbox-codec/' })
+
+  // Initialize from URL on first mount only
+  useEffect(() => {
+    if (urlCode && !initializedFromUrl.current) {
+      const { values: decoded } = decodeSandboxCode(urlCode)
+      setValues(decoded)
+      setDecodeInput(urlCode) // populate decode input too
+      initializedFromUrl.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // empty deps run only on mount
+
+  // Sync currentCode back to URL (after init)
+  useEffect(() => {
+    // Only update if initialized (or no urlCode was present, meaning we're starting fresh)
+    if (initializedFromUrl.current || !urlCode) {
+      const codeToSet = currentCode.length > 1 ? currentCode : undefined
+      if (codeToSet !== urlCode) {
+        navigate({
+          search: (prev) => ({ ...prev, code: codeToSet }),
+          replace: true,
+        })
+      }
+    }
+  }, [currentCode, navigate, urlCode])
 
   const handleDecode = () => {
     const trimmed = decodeInput.trim()
@@ -49,6 +89,30 @@ export function SandboxCodec() {
     setDecodeWarnings([])
     setSearchQuery('')
     toast.info('Reset to default values.')
+  }
+
+  const handleRandomizeAll = () => {
+    const newValues: Record<number, number> = {}
+
+    for (const opt of sandboxOptions) {
+      const len = getValueSetLength(opt)
+      newValues[opt.id] = len > 0 ? Math.floor(Math.random() * len) : opt.defaultValueIndex
+    }
+
+    let disabled = getDisabledOptionIds(newValues)
+    for (const id of disabled) {
+      const opt = optionsById.get(id)
+      if (opt) newValues[id] = opt.defaultValueIndex
+    }
+
+    disabled = getDisabledOptionIds(newValues)
+    for (const id of disabled) {
+      const opt = optionsById.get(id)
+      if (opt) newValues[id] = opt.defaultValueIndex
+    }
+
+    setValues(newValues)
+    toast.info('Randomized all options.')
   }
 
   const copyToClipboard = (text: string) => {
@@ -126,6 +190,10 @@ export function SandboxCodec() {
             <p className="text-muted-foreground mt-1">7 Days to Die V3.0 &bull; Encode and Decode Server Presets</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleRandomizeAll} size="sm">
+              <Shuffle className="w-4 h-4 mr-2" />
+              Randomize
+            </Button>
             <Button variant="outline" onClick={resetAll} size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
               Reset All

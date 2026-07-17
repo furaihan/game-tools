@@ -4,7 +4,9 @@ import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
 export class LayeredStampsGenerator implements BiomeGenerator {
   generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
-    const data = new Uint8Array(width * height)
+    const totalPixels = width * height
+    const UNASSIGNED = 255
+    const data = new Uint8Array(totalPixels).fill(UNASSIGNED)
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
 
@@ -61,21 +63,23 @@ export class LayeredStampsGenerator implements BiomeGenerator {
       }
     }
 
-    for (let i = 0; i < data.length; i++) {
-      if (data[i] === 0) {
-        let best = 0
-        let closest = Infinity
-        const x = i % width, y = Math.floor(i / width)
-        for (let ty = 0; ty < height; ty++) {
-          for (let tx = 0; tx < width; tx++) {
-            const idx = ty * width + tx
-            if (data[idx] !== 0) {
-              const d = (tx - x) ** 2 + (ty - y) ** 2
-              if (d < closest) { closest = d; best = data[idx] }
-            }
-          }
+    // Fill gaps with multi-source BFS
+    const queue: number[] = []
+    for (let i = 0; i < totalPixels; i++) {
+      if (data[i] !== UNASSIGNED) queue.push(i)
+    }
+    const dirs = [-width, width, -1, 1]
+    while (queue.length > 0) {
+      const idx = queue.shift()!
+      const x = idx % width
+      for (const d of dirs) {
+        const n = idx + d
+        if (n < 0 || n >= totalPixels) continue
+        if (Math.abs((n % width) - x) > 1) continue
+        if (data[n] === UNASSIGNED) {
+          data[n] = data[idx]
+          queue.push(n)
         }
-        data[i] = best
       }
     }
 

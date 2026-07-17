@@ -25,7 +25,7 @@ function HomePage() {
             {tools.map((tool) => {
               const Icon = tool.icon
               return (
-                <Link key={tool.href} to={tool.href as any} className="block w-full">
+                <Link key={tool.href} to={tool.href} className="block w-full">
                 <Card className="h-full w-full cursor-pointer border-border transition-all duration-200 hover:border-primary/50 hover:bg-accent/5 [--card-spacing:--spacing(6)]">
                   <CardHeader>
                     <div className="mb-3 flex items-center gap-3">

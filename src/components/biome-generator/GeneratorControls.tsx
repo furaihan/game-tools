@@ -47,7 +47,7 @@ export function GeneratorControls() {
     biomeMap,
     isGenerating, isFiltering, isFiltered,
     error,
-    generate, applyMedianBlur, exportPNG, copySeed,
+    generate, applyMajorityFilter, exportPNG, copySeed,
     resetToDefaults,
   } = useBiomeGenerator()
 
@@ -285,16 +285,16 @@ export function GeneratorControls() {
                 <Button
                   variant="outline"
                   className="w-full gap-2"
-                  onClick={applyMedianBlur}
+                  onClick={applyMajorityFilter}
                   disabled={!biomeMap || isGenerating || isFiltering || isFiltered}
                 >
                   <Filter className="h-4 w-4" />
-                  {isFiltering ? "Filtering..." : isFiltered ? "Median Blur Applied" : "Apply Median Blur"}
+                  {isFiltering ? "Filtering..." : isFiltered ? "Majority Filter Applied" : "Apply Majority Filter"}
                 </Button>
               }
             />
             <TooltipContent>
-              {isFiltering ? "Filtering..." : isFiltered ? "Median Blur Applied" : "Apply Median Blur"}
+              {isFiltering ? "Filtering..." : isFiltered ? "Majority Filter Applied" : "Apply Majority Filter"}
             </TooltipContent>
           </Tooltip>
         </div>

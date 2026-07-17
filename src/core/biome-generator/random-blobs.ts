@@ -4,7 +4,9 @@ import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
 export class RandomBlobsGenerator implements BiomeGenerator {
   generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
-    const data = new Uint8Array(width * height)
+    const totalPixels = width * height
+    const UNASSIGNED = 255
+    const data = new Uint8Array(totalPixels).fill(UNASSIGNED)
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
 
@@ -32,26 +34,23 @@ export class RandomBlobsGenerator implements BiomeGenerator {
       }
     }
 
-    // Fill gaps with nearest blob
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (data[y * width + x] === 0) {
-          let minDist = Infinity
-          let best = 0
-          for (let ty = 0; ty < height; ty++) {
-            for (let tx = 0; tx < width; tx++) {
-              if (data[ty * width + tx] !== 0) {
-                const dx = tx - x
-                const dy = ty - y
-                const dist = dx * dx + dy * dy
-                if (dist < minDist) {
-                  minDist = dist
-                  best = data[ty * width + tx]
-                }
-              }
-            }
-          }
-          data[y * width + x] = best
+    // Fill gaps with multi-source BFS
+    const queue: number[] = []
+    for (let i = 0; i < totalPixels; i++) {
+      if (data[i] !== UNASSIGNED) queue.push(i)
+    }
+    const dirs = [-width, width, -1, 1]
+    while (queue.length > 0) {
+      const idx = queue.shift()!
+      const x = idx % width, y = Math.floor(idx / width)
+      const biome = data[idx]
+      for (const d of dirs) {
+        const n = idx + d
+        if (n < 0 || n >= totalPixels) continue
+        if (Math.abs((n % width) - x) > 1) continue
+        if (data[n] === UNASSIGNED) {
+          data[n] = biome
+          queue.push(n)
         }
       }
     }

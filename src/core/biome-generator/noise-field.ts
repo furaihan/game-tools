@@ -44,15 +44,12 @@ class PerlinNoise {
 }
 
 class WorleyNoise {
-  private prng: () => number
-
-  constructor(prng: () => number) {
-    this.prng = prng
-  }
-
   private hash(x: number, y: number): number {
-    const prng = mulberry32((x * 73856093) ^ (y * 19349663) ^ Math.floor(this.prng() * 1000000))
-    return prng()
+    let h = (x * 73856093) ^ (y * 19349663)
+    h = ((h ^ (h >>> 16)) * 0x45d9f3b) >>> 0
+    h = ((h ^ (h >>> 16)) * 0x45d9f3b) >>> 0
+    h = (h ^ (h >>> 16)) >>> 0
+    return h / 4294967296
   }
 
   noise2D(x: number, y: number): number {
@@ -94,7 +91,7 @@ export class NoiseFieldGenerator implements BiomeGenerator {
     const getNoiseFunc = (prng: () => number) => {
       const simplex = createNoise2D(prng)
       const perlin = new PerlinNoise(prng)
-      const worley = new WorleyNoise(prng)
+      const worley = new WorleyNoise()
 
       return (nx: number, ny: number) => {
         let v = 0
