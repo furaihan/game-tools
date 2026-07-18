@@ -21,7 +21,7 @@ export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnl
   if (isReadOnly) {
     return (
       <div className="flex items-center space-x-3">
-        <div className="font-medium text-sm">
+        <div className="font-medium text-sm text-accent">
           {getValueSetDisplay(option.valueSetName, option.type, currentValueIndex)} {isDefault && <span className="text-muted-foreground text-xs ml-1">(Default)</span>}
         </div>
       </div>

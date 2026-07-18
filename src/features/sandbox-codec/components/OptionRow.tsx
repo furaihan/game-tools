@@ -31,7 +31,7 @@ export function OptionRow({ option, currentValueIndex, isDisabled, isReadOnly, o
               </TooltipContent>
             </Tooltip>
           )}
-          {!isDefault && <Badge variant="secondary">Modified</Badge>}
+          {!isDefault && !isReadOnly && <Badge variant="secondary">Modified</Badge>}
           {isDisabled && <Badge variant="outline" className="text-muted-foreground">Disabled</Badge>}
         </div>
       </div>
