@@ -1,9 +1,9 @@
-import type { BiomeDef, BiomeMap, BiomeGenerator } from '@/features/biome-generator/types/biome-generator'
+import type { BiomeDef, BiomeMap, BiomeGenerator, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
 import { createPRNG } from './prng'
 import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
 export class TerritoryExpansionGenerator implements BiomeGenerator {
-  generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
+  generate(width: number, height: number, seed: number, biomes: BiomeDef[], onStatus?: (status: GenerationStatus) => void): BiomeMap {
     const data = new Uint8Array(width * height).fill(255)
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
@@ -12,6 +12,8 @@ export class TerritoryExpansionGenerator implements BiomeGenerator {
     const numSeeds = Math.max(biomes.length, 20)
     const frontier: number[] = []
     const assigned = new Uint8Array(totalPixels)
+
+    onStatus?.({ phase: "Placing seeds", progress: 0 })
 
     for (let i = 0; i < numSeeds; i++) {
       const x = Math.floor(prng() * width)
@@ -25,40 +27,43 @@ export class TerritoryExpansionGenerator implements BiomeGenerator {
     }
 
     const dirs = [-width, width, -1, 1]
-    
+    let assignedCount = frontier.length
+    const reportInterval = Math.max(1000, Math.floor(totalPixels / 100))
+
+    onStatus?.({ phase: "Expanding territories", progress: 0.05 })
+
     while (frontier.length > 0) {
-      // 1. O(1) Random Pick: Ambil indeks acak tanpa shuffle seluruh array
       const randomIdx = Math.floor(prng() * frontier.length)
       const idx = frontier[randomIdx]
-      
-      // Swap dengan elemen terakhir, lalu pop untuk menghapus dalam O(1)
+
       frontier[randomIdx] = frontier[frontier.length - 1]
       frontier.pop()
 
       const biome = data[idx]
       const x = idx % width
-      // const y dihapus karena tidak dipakai
 
-      // 2. O(1) Loop: Hindari .map() dan .filter() untuk mengurangi beban Garbage Collection
       for (let i = 0; i < 4; i++) {
         const n = idx + dirs[i]
-        
-        // Cek batas atas dan bawah
+
         if (n < 0 || n >= totalPixels) continue
-        
-        // Cek batas kiri dan kanan (mencegah wrapping horizontal)
+
         const nx = n % width
         if (Math.abs(nx - x) > 1) continue
-        
-        // Lewati jika sudah di-assign
+
         if (assigned[n]) continue
 
         assigned[n] = 1
         data[n] = biome
         frontier.push(n)
       }
+
+      assignedCount++
+      if (assignedCount % reportInterval === 0) {
+        onStatus?.({ phase: "Expanding territories", progress: 0.05 + (assignedCount / totalPixels) * 0.95 })
+      }
     }
 
+    onStatus?.({ phase: "Done", progress: 1 })
     return { width, height, seed, data }
   }
 }

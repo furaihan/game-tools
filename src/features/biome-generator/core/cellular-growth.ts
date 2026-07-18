@@ -1,13 +1,15 @@
-import type { BiomeDef, BiomeMap, BiomeGenerator } from '@/features/biome-generator/types/biome-generator'
+import type { BiomeDef, BiomeMap, BiomeGenerator, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
 import { createPRNG } from './prng'
 import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
 export class CellularGrowthGenerator implements BiomeGenerator {
-  generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
+  generate(width: number, height: number, seed: number, biomes: BiomeDef[], onStatus?: (status: GenerationStatus) => void): BiomeMap {
     const data = new Uint8Array(width * height).fill(255) // 255 = unassigned
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
     const totalPixels = width * height
+
+    onStatus?.({ phase: "Scattering seeds", progress: 0 })
 
     // 1. Scatter seed points, count proportional to biome weight
     const seedCount = Math.max(biomes.length * 3, Math.floor(totalPixels / 400))
@@ -24,7 +26,11 @@ export class CellularGrowthGenerator implements BiomeGenerator {
       }
     }
 
+    onStatus?.({ phase: "Growing blobs", progress: 0.05 })
+
     // 2. Grow blobs outward (BFS-ish with randomized order = organic edges)
+    let assignedCount = frontier.length
+    const reportInterval = Math.max(1000, Math.floor(totalPixels / 100))
     while (frontier.length > 0) {
       // pop random element instead of shift, biar growth-nya gak berpola arah tetap
       const pickAt = Math.floor(prng() * frontier.length)
@@ -46,12 +52,21 @@ export class CellularGrowthGenerator implements BiomeGenerator {
         if (data[nIdx] !== 255) continue
         data[nIdx] = biomeIdx
         frontier.push(nIdx)
+        assignedCount++
+        if (assignedCount % reportInterval === 0) {
+          onStatus?.({ phase: "Growing blobs", progress: 0.05 + (assignedCount / totalPixels) * 0.80 })
+        }
       }
     }
+
+    onStatus?.({ phase: "Smoothing edges", progress: 0.85 })
 
     // 3. Light smoothing pass buat rapiin edge (bukan generate dari scratch lagi)
     const smoothed = new Uint8Array(data)
     for (let y = 0; y < height; y++) {
+      if (y % Math.max(1, Math.floor(height / 20)) === 0) {
+        onStatus?.({ phase: "Smoothing edges", progress: 0.85 + (y / height) * 0.15 })
+      }
       for (let x = 0; x < width; x++) {
         const counts: number[] = new Array(biomes.length).fill(0)
         const yMin = Math.max(0, y - 1), yMax = Math.min(height - 1, y + 1)
@@ -75,6 +90,7 @@ export class CellularGrowthGenerator implements BiomeGenerator {
       }
     }
 
+    onStatus?.({ phase: "Done", progress: 1 })
     return { width, height, seed, data: smoothed }
   }
 }

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
-import type { BiomeDef, BiomeMap, AlgorithmName } from '@/features/biome-generator/types/biome-generator'
+import type { BiomeDef, BiomeMap, AlgorithmName, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
 
 interface BiomeGeneratorState {
   biomes: BiomeDef[]
@@ -11,6 +11,7 @@ interface BiomeGeneratorState {
   isFiltering: boolean
   isFiltered: boolean
   error: string | null
+  generationStatus: GenerationStatus | null
 }
 
 interface BiomeGeneratorActions {
@@ -95,6 +96,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
   const [isFiltering, setIsFiltering] = useState(false)
   const [isFiltered, setIsFiltered] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus | null>(null)
 
   const workerRef = useRef<Worker | null>(null)
   const filterWorkerRef = useRef<Worker | null>(null)
@@ -135,6 +137,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setError(null)
     setIsGenerating(true)
     setIsFiltered(false)
+    setGenerationStatus({ phase: "Starting…", progress: 0 })
 
     if (workerRef.current) {
       workerRef.current.terminate()
@@ -146,12 +149,21 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     )
 
     workerRef.current.onmessage = (e) => {
-      if (e.data.type === 'success') {
-        setBiomeMap(e.data.data)
-      } else {
-        setError(e.data.error || "Generation failed")
+      switch (e.data.type) {
+        case 'status':
+          setGenerationStatus(e.data.status)
+          break
+        case 'success':
+          setBiomeMap(e.data.data)
+          setIsGenerating(false)
+          setGenerationStatus(null)
+          break
+        case 'error':
+          setError(e.data.error || "Generation failed")
+          setIsGenerating(false)
+          setGenerationStatus(null)
+          break
       }
-      setIsGenerating(false)
     }
 
     workerRef.current.onerror = (err) => {
@@ -253,7 +265,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
         algorithm, setAlgorithm,
         biomeMap,
         isGenerating, isFiltering, isFiltered,
-        error,
+        error, generationStatus,
         loadPreset, randomizeSeed,
         generate, applyMajorityFilter, exportPNG, copySeed,
         resetToDefaults,

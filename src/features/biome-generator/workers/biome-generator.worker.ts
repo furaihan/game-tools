@@ -16,9 +16,9 @@ self.onmessage = (e: MessageEvent<{
       throw new Error(`Algorithm ${algorithm} not found`)
     }
 
-    const start = performance.now()
-    const result = generator.generate(width, height, seed, biomes)
-    console.log(`Generation took ${performance.now() - start}ms`)
+    const result = generator.generate(width, height, seed, biomes, (status) => {
+      self.postMessage({ type: 'status', status })
+    })
 
     self.postMessage({ type: 'success', data: result })
   } catch (err: any) {

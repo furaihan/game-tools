@@ -2,6 +2,7 @@ import type {
   BiomeDef,
   BiomeMap,
   BiomeGenerator,
+  GenerationStatus,
 } from "@/features/biome-generator/types/biome-generator";
 import { createPRNG } from "./prng";
 import { getNormalizedWeights, pickBiomeIndex } from "./utils";
@@ -12,14 +13,18 @@ export class WeightedExpansionGenerator implements BiomeGenerator {
     height: number,
     seed: number,
     biomes: BiomeDef[],
+    onStatus?: (status: GenerationStatus) => void,
   ): BiomeMap {
     const data = new Uint8Array(width * height).fill(255);
     const prng = createPRNG(seed);
     const weights = getNormalizedWeights(biomes);
     const totalPixels = width * height;
 
+    onStatus?.({ phase: "Placing seeds", progress: 0 });
+
     const numSeeds = Math.max(biomes.length * 2, 30);
     const frontier: number[] = [];
+    let assignedCount = 0;
 
     for (let i = 0; i < numSeeds; i++) {
       const x = Math.floor(prng() * width);
@@ -28,10 +33,15 @@ export class WeightedExpansionGenerator implements BiomeGenerator {
       if (data[idx] === 255) {
         data[idx] = pickBiomeIndex(weights, prng());
         frontier.push(idx);
+        assignedCount++;
       }
     }
 
     const dirs = [-width, width, -1, 1];
+    const reportInterval = Math.max(1000, Math.floor(totalPixels / 100));
+
+    onStatus?.({ phase: "Expanding territories", progress: 0.05 });
+
     while (frontier.length > 0) {
       const idx = frontier.shift()!;
       const x = idx % width;
@@ -48,9 +58,16 @@ export class WeightedExpansionGenerator implements BiomeGenerator {
 
       for (const n of neighbors) {
         data[n] = data[idx];
+        assignedCount++;
+        if (assignedCount % reportInterval === 0) {
+          onStatus?.({ phase: "Expanding territories", progress: 0.05 + (assignedCount / totalPixels) * 0.80 })
+        }
         if (prng() < 0.7) frontier.push(n);
       }
     }
+
+    onStatus?.({ phase: "Filling remaining gaps", progress: 0.85 });
+
     let remaining = true;
     while (remaining) {
       remaining = false;
@@ -74,6 +91,7 @@ export class WeightedExpansionGenerator implements BiomeGenerator {
       }
     }
 
+    onStatus?.({ phase: "Done", progress: 1 });
     return { width, height, seed, data };
   }
 }

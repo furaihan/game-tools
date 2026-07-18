@@ -12,8 +12,14 @@ export interface BiomeMap {
   data: Uint8Array
 }
 
+export interface GenerationStatus {
+  phase: string
+  progress: number
+  detail?: string
+}
+
 export interface BiomeGenerator {
-  generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap
+  generate(width: number, height: number, seed: number, biomes: BiomeDef[], onStatus?: (status: GenerationStatus) => void): BiomeMap
 }
 
 export type AlgorithmName =

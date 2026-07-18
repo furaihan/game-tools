@@ -1,18 +1,19 @@
-import type { BiomeDef, BiomeMap, BiomeGenerator } from '@/features/biome-generator/types/biome-generator'
+import type { BiomeDef, BiomeMap, BiomeGenerator, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
 import { createPRNG } from './prng'
 import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
 export class BiomeIslandsGenerator implements BiomeGenerator {
-  generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
+  generate(width: number, height: number, seed: number, biomes: BiomeDef[], onStatus?: (status: GenerationStatus) => void): BiomeMap {
     const totalPixels = width * height
     const UNASSIGNED = 255
     const data = new Uint8Array(totalPixels).fill(UNASSIGNED)
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
 
+    onStatus?.({ phase: "Creating islands", progress: 0 })
+
     const numIslandsPerBiome = Math.max(1, Math.floor(prng() * 5) + 2)
 
-    // Kumpulkan dulu ke array biasa (urutan prng() call PERSIS sama seperti sebelumnya)
     const tmpIslands: { cx: number; cy: number; biome: number; radius: number }[] = []
     for (let b = 0; b < biomes.length; b++) {
       if (biomes[b].weight <= 0) continue
@@ -26,6 +27,8 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
         })
       }
     }
+
+    onStatus?.({ phase: "Converting data", progress: 0.10 })
 
     // Struct-of-arrays: lebih cepat diakses V8 dibanding array of objects
     const n = tmpIslands.length
@@ -45,7 +48,12 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
       iInvRadius[i] = 1 / isl.radius
     }
 
+    onStatus?.({ phase: "Calculating influence", progress: 0.15 })
+
     for (let y = 0; y < height; y++) {
+      if (y % Math.max(1, Math.floor(height / 20)) === 0) {
+        onStatus?.({ phase: "Calculating influence", progress: 0.15 + (y / height) * 0.55 })
+      }
       const rowOffset = y * width
       for (let x = 0; x < width; x++) {
         let maxInfluence = 0
@@ -54,7 +62,7 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
           const dx = x - iCx[i]
           const dy = y - iCy[i]
           const distSq = dx * dx + dy * dy
-          if (distSq >= iRadiusSq[i]) continue // skip sqrt kalau sudah pasti di luar radius
+          if (distSq >= iRadiusSq[i]) continue
           const dist = Math.sqrt(distSq)
           const influence = 1 - dist * iInvRadius[i]
           if (influence > maxInfluence) {
@@ -68,6 +76,8 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
       }
     }
 
+    onStatus?.({ phase: "Filling gaps", progress: 0.70 })
+
     // Fill gaps dengan multi-source BFS, pakai head-pointer queue (bukan shift())
     const queue = new Int32Array(totalPixels)
     let qHead = 0
@@ -75,6 +85,8 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
     for (let i = 0; i < totalPixels; i++) {
       if (data[i] !== UNASSIGNED) queue[qTail++] = i
     }
+    const totalUnassigned = totalPixels - qTail
+    let filled = 0
     const dirs = [-width, width, -1, 1]
     while (qHead < qTail) {
       const idx = queue[qHead++]
@@ -87,10 +99,15 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
         if (data[nIdx] === UNASSIGNED) {
           data[nIdx] = val
           queue[qTail++] = nIdx
+          filled++
+          if (filled % 1000 === 0) {
+            onStatus?.({ phase: "Filling gaps", progress: 0.70 + (filled / totalUnassigned) * 0.30 })
+          }
         }
       }
     }
 
+    onStatus?.({ phase: "Done", progress: 1 })
     return { width, height, seed, data }
   }
 }

@@ -1,4 +1,4 @@
-import type { BiomeDef, BiomeMap, BiomeGenerator } from '@/features/biome-generator/types/biome-generator'
+import type { BiomeDef, BiomeMap, BiomeGenerator, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
 import { createPRNG } from './prng'
 import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
@@ -10,10 +10,12 @@ interface Region {
 }
 
 export class RecursiveSplitGenerator implements BiomeGenerator {
-  generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
+  generate(width: number, height: number, seed: number, biomes: BiomeDef[], onStatus?: (status: GenerationStatus) => void): BiomeMap {
     const data = new Uint8Array(width * height)
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
+
+    onStatus?.({ phase: "Splitting regions", progress: 0 })
 
     const regions: Region[] = [{ x: 0, y: 0, w: width, h: height }]
     const minSize = Math.max(8, Math.min(width, height) * 0.05)
@@ -50,7 +52,11 @@ export class RecursiveSplitGenerator implements BiomeGenerator {
       }
     }
 
+    onStatus?.({ phase: `Assigning biomes to ${regions.length} regions`, progress: 0.40 })
+
     let lastBiome = -1
+    const totalPixels = width * height
+    let paintedPixels = 0
 
     for (const r of regions) {
       let biome = pickBiomeIndex(weights, prng())
@@ -64,8 +70,12 @@ export class RecursiveSplitGenerator implements BiomeGenerator {
           data[y * width + x] = biome
         }
       }
+
+      paintedPixels += r.w * r.h
+      onStatus?.({ phase: "Assigning biomes", progress: 0.40 + (paintedPixels / totalPixels) * 0.60 })
     }
 
+    onStatus?.({ phase: "Done", progress: 1 })
     return { width, height, seed, data }
   }
 }

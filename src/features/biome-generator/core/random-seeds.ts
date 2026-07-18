@@ -1,4 +1,4 @@
-import type { BiomeDef, BiomeMap, BiomeGenerator } from '@/features/biome-generator/types/biome-generator'
+import type { BiomeDef, BiomeMap, BiomeGenerator, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
 import { createPRNG } from './prng'
 import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
@@ -9,9 +9,11 @@ function distSq(x1: number, y1: number, x2: number, y2: number): number {
 }
 
 export class RandomSeedsGenerator implements BiomeGenerator {
-  generate(width: number, height: number, seed: number, biomes: BiomeDef[]): BiomeMap {
+  generate(width: number, height: number, seed: number, biomes: BiomeDef[], onStatus?: (status: GenerationStatus) => void): BiomeMap {
     const prng = createPRNG(seed)
     const weights = getNormalizedWeights(biomes)
+
+    onStatus?.({ phase: "Placing seeds", progress: 0 })
 
     const numSeeds = Math.max(biomes.length, Math.floor((width * height) / 500))
     const seedX = new Int32Array(numSeeds)
@@ -35,8 +37,14 @@ export class RandomSeedsGenerator implements BiomeGenerator {
     const maxDim = Math.max(width, height)
     let step = 1 << Math.ceil(Math.log2(maxDim))
 
+    const totalSteps = Math.ceil(Math.log2(maxDim)) + 1
+    let stepIdx = 0
+
     // JFA utama: step mengecil separuh tiap iterasi (512, 256, ..., 1)
     while (step >= 1) {
+      stepIdx++
+      onStatus?.({ phase: `Jump flood pass ${stepIdx}/${totalSteps}`, progress: 0.05 + (stepIdx / totalSteps) * 0.80 })
+
       next.set(curr)
 
       for (let y = 0; y < height; y++) {
@@ -71,6 +79,8 @@ export class RandomSeedsGenerator implements BiomeGenerator {
       step >>= 1
     }
 
+    onStatus?.({ phase: "Cleanup pass", progress: 0.85 })
+
     // pass cleanup extra (JFA+1) buat ngerapiin edge case yang kadang miss di JFA murni
     next.set(curr)
     for (let y = 0; y < height; y++) {
@@ -102,12 +112,15 @@ export class RandomSeedsGenerator implements BiomeGenerator {
     }
     curr = next
 
+    onStatus?.({ phase: "Building output", progress: 0.95 })
+
     const data = new Uint8Array(width * height)
     for (let i = 0; i < width * height; i++) {
       const id = curr[i]
       data[i] = id === -1 ? 0 : seedBiome[id]
     }
 
+    onStatus?.({ phase: "Done", progress: 1 })
     return { width, height, seed, data }
   }
 }
