@@ -11,13 +11,14 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
     const weights = getNormalizedWeights(biomes)
 
     const numIslandsPerBiome = Math.max(1, Math.floor(prng() * 5) + 2)
-    const islands: { cx: number; cy: number; biome: number; radius: number }[] = []
 
+    // Kumpulkan dulu ke array biasa (urutan prng() call PERSIS sama seperti sebelumnya)
+    const tmpIslands: { cx: number; cy: number; biome: number; radius: number }[] = []
     for (let b = 0; b < biomes.length; b++) {
       if (biomes[b].weight <= 0) continue
       const count = Math.ceil(numIslandsPerBiome * weights[b] * biomes.length)
       for (let i = 0; i < count; i++) {
-        islands.push({
+        tmpIslands.push({
           cx: Math.floor(prng() * width),
           cy: Math.floor(prng() * height),
           biome: b,
@@ -26,44 +27,66 @@ export class BiomeIslandsGenerator implements BiomeGenerator {
       }
     }
 
+    // Struct-of-arrays: lebih cepat diakses V8 dibanding array of objects
+    const n = tmpIslands.length
+    const iCx = new Float64Array(n)
+    const iCy = new Float64Array(n)
+    const iBiome = new Uint8Array(n)
+    const iRadius = new Float64Array(n)
+    const iRadiusSq = new Float64Array(n)
+    const iInvRadius = new Float64Array(n)
+    for (let i = 0; i < n; i++) {
+      const isl = tmpIslands[i]
+      iCx[i] = isl.cx
+      iCy[i] = isl.cy
+      iBiome[i] = isl.biome
+      iRadius[i] = isl.radius
+      iRadiusSq[i] = isl.radius * isl.radius
+      iInvRadius[i] = 1 / isl.radius
+    }
+
     for (let y = 0; y < height; y++) {
+      const rowOffset = y * width
       for (let x = 0; x < width; x++) {
         let maxInfluence = 0
         let bestBiome = UNASSIGNED
-        for (const island of islands) {
-          const dx = x - island.cx
-          const dy = y - island.cy
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist < island.radius) {
-            const influence = 1 - dist / island.radius
-            if (influence > maxInfluence) {
-              maxInfluence = influence
-              bestBiome = island.biome
-            }
+        for (let i = 0; i < n; i++) {
+          const dx = x - iCx[i]
+          const dy = y - iCy[i]
+          const distSq = dx * dx + dy * dy
+          if (distSq >= iRadiusSq[i]) continue // skip sqrt kalau sudah pasti di luar radius
+          const dist = Math.sqrt(distSq)
+          const influence = 1 - dist * iInvRadius[i]
+          if (influence > maxInfluence) {
+            maxInfluence = influence
+            bestBiome = iBiome[i]
           }
         }
         if (bestBiome !== UNASSIGNED) {
-          data[y * width + x] = bestBiome
+          data[rowOffset + x] = bestBiome
         }
       }
     }
 
-    // Fill gaps with multi-source BFS
-    const queue: number[] = []
+    // Fill gaps dengan multi-source BFS, pakai head-pointer queue (bukan shift())
+    const queue = new Int32Array(totalPixels)
+    let qHead = 0
+    let qTail = 0
     for (let i = 0; i < totalPixels; i++) {
-      if (data[i] !== UNASSIGNED) queue.push(i)
+      if (data[i] !== UNASSIGNED) queue[qTail++] = i
     }
     const dirs = [-width, width, -1, 1]
-    while (queue.length > 0) {
-      const idx = queue.shift()!
+    while (qHead < qTail) {
+      const idx = queue[qHead++]
       const x = idx % width
+      const val = data[idx]
       for (const d of dirs) {
-        const n = idx + d
-        if (n < 0 || n >= totalPixels) continue
-        if (Math.abs((n % width) - x) > 1) continue
-        if (data[n] === UNASSIGNED) {
-          data[n] = data[idx]
-          queue.push(n)
+        const nIdx = idx + d
+        if (nIdx < 0 || nIdx >= totalPixels) continue
+        if (Math.abs((nIdx % width) - x) > 1) continue
+        if (data[nIdx] === UNASSIGNED) {
+          data[nIdx] = val
+          queue[qTail++] = nIdx
         }
       }
     }
