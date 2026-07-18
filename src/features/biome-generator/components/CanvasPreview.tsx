@@ -9,7 +9,7 @@ function calcFitScale(
 ): number {
   if (imageW === 0 || imageH === 0 || containerW === 0 || containerH === 0) return 1
   const pad = 40
-  return Math.min((containerW - pad) / imageW, (containerH - pad) / imageH, 1)
+  return Math.max(0.05, Math.min((containerW - pad) / imageW, (containerH - pad) / imageH, 1))
 }
 
 export function CanvasPreview() {
@@ -146,7 +146,7 @@ export function CanvasPreview() {
             <div
               style={{
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-                transformOrigin: '0 0',
+                transformOrigin: 'center center',
                 lineHeight: 0,
               }}
             >
