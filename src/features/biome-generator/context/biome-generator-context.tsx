@@ -1,13 +1,11 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
-import type { BiomeDef, BiomeMap, GenerationMode, AlgorithmName, NoiseConfig, NoiseType, BiomeMapping } from '@/features/biome-generator/types/biome-generator'
+import type { BiomeDef, BiomeMap, AlgorithmName } from '@/features/biome-generator/types/biome-generator'
 
 interface BiomeGeneratorState {
   biomes: BiomeDef[]
   seed: number
   resolution: number
-  mode: GenerationMode
   algorithm: AlgorithmName
-  noiseConfig: NoiseConfig
   biomeMap: BiomeMap | null
   isGenerating: boolean
   isFiltering: boolean
@@ -19,9 +17,7 @@ interface BiomeGeneratorActions {
   setBiomes: (biomes: BiomeDef[]) => void
   setSeed: (seed: number) => void
   setResolution: (resolution: number) => void
-  setMode: (mode: GenerationMode) => void
   setAlgorithm: (algorithm: AlgorithmName) => void
-  setNoiseConfig: (config: NoiseConfig) => void
   loadPreset: (name: string) => void
   randomizeSeed: () => void
   generate: () => void
@@ -74,15 +70,6 @@ const PRESETS: Record<string, BiomeDef[]> = {
   ],
 }
 
-export const DEFAULT_NOISE: NoiseConfig = {
-  noiseType: "Simplex",
-  scale: 256,
-  octaves: 4,
-  persistence: 0.5,
-  lacunarity: 2.0,
-  biomeMapping: "Threshold Bands",
-}
-
 export const DEFAULT_BIOMES = [
   { id: "7d2d-1", name: "Forest", color: "#004000", weight: 20 },
   { id: "7d2d-2", name: "Burnt Forest", color: "#BA00FF", weight: 15 },
@@ -92,7 +79,6 @@ export const DEFAULT_BIOMES = [
 ]
 
 export const DEFAULT_RESOLUTION = 1024
-export const DEFAULT_MODE: GenerationMode = "Simple"
 export const DEFAULT_ALGORITHM: AlgorithmName = "Probability Fields"
 
 const BiomeGeneratorContext = createContext<BiomeGeneratorContextValue | null>(null)
@@ -103,9 +89,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
   )
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1000000))
   const [resolution, setResolution] = useState(DEFAULT_RESOLUTION)
-  const [mode, setMode] = useState<GenerationMode>(DEFAULT_MODE)
   const [algorithm, setAlgorithm] = useState<AlgorithmName>(DEFAULT_ALGORITHM)
-  const [noiseConfig, setNoiseConfig] = useState<NoiseConfig>({ ...DEFAULT_NOISE })
   const [biomeMap, setBiomeMap] = useState<BiomeMap | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isFiltering, setIsFiltering] = useState(false)
@@ -137,9 +121,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setBiomes(DEFAULT_BIOMES.map(b => ({ ...b })))
     setSeed(Math.floor(Math.random() * 1000000))
     setResolution(DEFAULT_RESOLUTION)
-    setMode(DEFAULT_MODE)
     setAlgorithm(DEFAULT_ALGORITHM)
-    setNoiseConfig({ ...DEFAULT_NOISE })
     setBiomeMap(null)
     setIsFiltered(false)
     setError(null)
@@ -177,17 +159,14 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
       setIsGenerating(false)
     }
 
-    const currentNoiseConfig = mode === "Noise" ? noiseConfig : undefined
     workerRef.current.postMessage({
       width: resolution,
       height: resolution,
       seed,
       biomes,
-      mode,
       algorithm,
-      noiseConfig: currentNoiseConfig,
     })
-  }, [biomes, seed, resolution, algorithm, mode, noiseConfig])
+  }, [biomes, seed, resolution, algorithm])
 
   const applyMajorityFilter = useCallback(() => {
     if (!biomeMap) return
@@ -255,13 +234,11 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     ctx.putImageData(imageData, 0, 0)
 
     const link = document.createElement("a")
-    const safeAlgo = mode === "Noise"
-      ? `noise-${noiseConfig.noiseType.toLowerCase()}`
-      : algorithm.toLowerCase().replace(/\s+/g, '-')
+    const safeAlgo = algorithm.toLowerCase().replace(/\s+/g, '-')
     link.download = `biome_${seed}_${safeAlgo}_${resolution}.png`
     link.href = canvas.toDataURL("image/png")
     link.click()
-  }, [biomeMap, biomes, seed, algorithm, mode, noiseConfig, resolution])
+  }, [biomeMap, biomes, seed, algorithm, resolution])
 
   const copySeed = useCallback(() => {
     navigator.clipboard.writeText(seed.toString())
@@ -273,9 +250,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
         biomes, setBiomes,
         seed, setSeed,
         resolution, setResolution,
-        mode, setMode,
         algorithm, setAlgorithm,
-        noiseConfig, setNoiseConfig,
         biomeMap,
         isGenerating, isFiltering, isFiltered,
         error,

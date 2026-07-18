@@ -10,7 +10,7 @@ import {
 } from '@/shared/ui/tooltip'
 
 export function BiomeList() {
-  const { biomes, setBiomes, biomeMap, mode, noiseConfig } = useBiomeGenerator()
+  const { biomes, setBiomes, biomeMap } = useBiomeGenerator()
 
   const totalWeight = biomes.reduce((acc, b) => acc + Math.max(0, b.weight), 0)
 
@@ -149,11 +149,7 @@ export function BiomeList() {
         </div>
 
         <div className="shrink-0 border-t px-4 py-3 text-[10px] italic text-muted-foreground/60 leading-relaxed">
-          {mode === "Noise"
-            ? noiseConfig.biomeMapping === "Threshold Bands"
-              ? "Threshold Bands yields coverage roughly proportional to weights."
-              : "Multi-Layer Argmax weights affect odds organically, not directly proportionally."
-            : "Distribution based on the active map generation."}
+          Distribution based on the active map generation.
         </div>
       </div>
     </TooltipProvider>

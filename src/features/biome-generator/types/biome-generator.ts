@@ -27,17 +27,4 @@ export type AlgorithmName =
   | "Weighted Expansion"
   | "Biome Islands"
 
-export type GenerationMode = "Simple" | "Noise"
 
-export type NoiseType = "Perlin" | "Simplex" | "Fractal" | "Worley"
-
-export type BiomeMapping = "Threshold Bands" | "Multi-Layer Argmax"
-
-export interface NoiseConfig {
-  noiseType: NoiseType
-  scale: number
-  octaves: number
-  persistence: number
-  lacunarity: number
-  biomeMapping: BiomeMapping
-}
