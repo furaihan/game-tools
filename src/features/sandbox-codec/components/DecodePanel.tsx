@@ -1,34 +1,22 @@
-import type { SandboxOption } from '@/features/sandbox-codec/core/sandboxOptions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Textarea } from '@/shared/ui/textarea'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { AlertCircle, Settings2 } from 'lucide-react'
 import { OptionRow } from './OptionRow'
+import { useSandboxCodec } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
-interface DecodePanelProps {
-  decodeInput: string
-  onDecodeInputChange: (value: string) => void
-  onDecode: () => void
-  decodeWarnings: string[]
-  filteredChangedGroups: Record<string, SandboxOption[]>
-  changedOptions: SandboxOption[]
-  values: Record<number, number>
-  disabledOptionIds: Set<number>
-  onSwitchToEncode: () => void
-}
+export function DecodePanel() {
+  const {
+    decodeInput,
+    setDecodeInput,
+    handleDecode,
+    decodeWarnings,
+    filteredChangedGroups,
+    changedOptions,
+    setActiveTab,
+  } = useSandboxCodec()
 
-export function DecodePanel({
-  decodeInput,
-  onDecodeInputChange,
-  onDecode,
-  decodeWarnings,
-  filteredChangedGroups,
-  changedOptions,
-  values,
-  disabledOptionIds,
-  onSwitchToEncode,
-}: DecodePanelProps) {
   return (
     <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
       <Card>
@@ -40,14 +28,14 @@ export function DecodePanel({
           <Textarea
             placeholder="e.g. AAAJABJACJAD..."
             value={decodeInput}
-            onChange={(e) => onDecodeInputChange(e.target.value)}
+            onChange={(e) => setDecodeInput(e.target.value)}
             className="font-mono min-h-[100px]"
           />
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={onDecode} className="w-full sm:w-auto">
+            <Button onClick={handleDecode} className="w-full sm:w-auto">
               Decode Code
             </Button>
-            <Button variant="secondary" onClick={onSwitchToEncode} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={() => setActiveTab('encode')} className="w-full sm:w-auto">
               <Settings2 className="w-4 h-4 mr-2" />
               Edit Options
             </Button>
@@ -75,13 +63,7 @@ export function DecodePanel({
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{cat}</h4>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {opts.map((opt) => (
-                  <OptionRow
-                    key={opt.id}
-                    option={opt}
-                    currentValueIndex={values[opt.id] ?? opt.defaultValueIndex}
-                    isDisabled={disabledOptionIds.has(opt.id)}
-                    isReadOnly
-                  />
+                  <OptionRow key={opt.id} option={opt} isReadOnly />
                 ))}
               </div>
             </div>

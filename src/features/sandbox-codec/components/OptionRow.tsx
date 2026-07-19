@@ -3,16 +3,17 @@ import { OptionControl } from './OptionControl'
 import { Badge } from '@/shared/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import { HelpCircle } from 'lucide-react'
+import { useSandboxCodec } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
 interface OptionRowProps {
   option: SandboxOption
-  currentValueIndex: number
-  isDisabled: boolean
   isReadOnly?: boolean
-  onSetValue?: (optionId: number, valueIndex: number) => void
 }
 
-export function OptionRow({ option, currentValueIndex, isDisabled, isReadOnly, onSetValue }: OptionRowProps) {
+export function OptionRow({ option, isReadOnly }: OptionRowProps) {
+  const { values, disabledOptionIds } = useSandboxCodec()
+  const currentValueIndex = values[option.id] ?? option.defaultValueIndex
+  const isDisabled = disabledOptionIds.has(option.id)
   const isDefault = currentValueIndex === option.defaultValueIndex
   const description = getDescription(option.enumName)
 
@@ -41,7 +42,6 @@ export function OptionRow({ option, currentValueIndex, isDisabled, isReadOnly, o
           currentValueIndex={currentValueIndex}
           isDisabled={isDisabled}
           isReadOnly={isReadOnly}
-          onSetValue={onSetValue}
         />
       </div>
     </div>

@@ -1,16 +1,10 @@
-import type { SandboxOption } from '@/features/sandbox-codec/core/sandboxOptions'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Badge } from '@/shared/ui/badge'
 import { OptionRow } from './OptionRow'
+import { useSandboxCodec } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
-interface EncodePanelProps {
-  filteredGroups: Record<string, SandboxOption[]>
-  values: Record<number, number>
-  disabledOptionIds: Set<number>
-  onSetValue: (optionId: number, valueIndex: number) => void
-}
-
-export function EncodePanel({ filteredGroups, values, disabledOptionIds, onSetValue }: EncodePanelProps) {
+export function EncodePanel() {
+  const { filteredGroups, values } = useSandboxCodec()
   const categoryKeys = Object.keys(filteredGroups)
 
   if (categoryKeys.length === 0) {
@@ -48,13 +42,7 @@ export function EncodePanel({ filteredGroups, values, disabledOptionIds, onSetVa
           <TabsContent key={cat} value={cat} className="mt-0 outline-none">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {filteredGroups[cat].map((opt) => (
-                <OptionRow
-                  key={opt.id}
-                  option={opt}
-                  currentValueIndex={values[opt.id] ?? opt.defaultValueIndex}
-                  isDisabled={disabledOptionIds.has(opt.id)}
-                  onSetValue={onSetValue}
-                />
+                <OptionRow key={opt.id} option={opt} />
               ))}
             </div>
           </TabsContent>
