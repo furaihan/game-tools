@@ -22,6 +22,7 @@ interface BiomeGeneratorActions {
   loadPreset: (name: string) => void
   randomizeSeed: () => void
   generate: () => void
+  randomizeAndGenerate: () => void
   applyMajorityFilter: () => void
   exportPNG: () => void
   copySeed: () => void
@@ -129,7 +130,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setError(null)
   }, [])
 
-  const generate = useCallback(() => {
+  const runGeneration = useCallback((seedToUse: number) => {
     if (biomes.length === 0 || biomes.every(b => b.weight <= 0)) {
       setError("Please add at least one biome with a weight > 0.")
       return
@@ -174,11 +175,21 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     workerRef.current.postMessage({
       width: resolution,
       height: resolution,
-      seed,
+      seed: seedToUse,
       biomes,
       algorithm,
     })
-  }, [biomes, seed, resolution, algorithm])
+  }, [biomes, resolution, algorithm])
+
+  const generate = useCallback(() => {
+    runGeneration(seed)
+  }, [runGeneration, seed])
+
+  const randomizeAndGenerate = useCallback(() => {
+    const newSeed = Math.floor(Math.random() * 1000000)
+    setSeed(newSeed)
+    runGeneration(newSeed)
+  }, [runGeneration])
 
   const applyMajorityFilter = useCallback(() => {
     if (!biomeMap) return
@@ -267,7 +278,8 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
         isGenerating, isFiltering, isFiltered,
         error, generationStatus,
         loadPreset, randomizeSeed,
-        generate, applyMajorityFilter, exportPNG, copySeed,
+        generate, randomizeAndGenerate,
+        applyMajorityFilter, exportPNG, copySeed,
         resetToDefaults,
       }}
 

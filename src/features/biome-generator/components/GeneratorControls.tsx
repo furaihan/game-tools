@@ -50,6 +50,7 @@ export function GeneratorControls() {
     error,
     generationStatus,
     generate,
+    randomizeAndGenerate,
     applyMajorityFilter,
     exportPNG,
     copySeed,
@@ -199,9 +200,10 @@ export function GeneratorControls() {
               className="w-full gap-2"
               onClick={() => {
                 if (biomeMap) {
-                  randomizeSeed();
+                  randomizeAndGenerate();
+                } else {
+                  generate();
                 }
-                generate();
               }}
               disabled={isGenerating || isFiltering}
             >
