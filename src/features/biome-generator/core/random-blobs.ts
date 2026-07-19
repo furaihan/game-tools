@@ -21,45 +21,99 @@ export class RandomBlobsGenerator implements BiomeGenerator {
       const biome = pickBiomeIndex(weights, prng())
 
       const r2 = radius * radius
-      const xMin = Math.max(0, cx - radius)
-      const xMax = Math.min(width - 1, cx + radius)
-      const yMin = Math.max(0, cy - radius)
-      const yMax = Math.min(height - 1, cy + radius)
-
-      for (let y = yMin; y <= yMax; y++) {
-        for (let x = xMin; x <= xMax; x++) {
-          const dx = x - cx
-          const dy = y - cy
-          if (dx * dx + dy * dy <= r2) {
-            data[y * width + x] = biome
-          }
+      
+      // OPTIMIZATION 1: Exact circle rasterization
+      // Instead of iterating over a square bounding box and checking distance 
+      // for every pixel, we calculate the exact horizontal span for each row.
+      const dyStart = Math.max(-radius, -cy)
+      const dyEnd = Math.min(radius, height - 1 - cy)
+      
+      for (let dy = dyStart; dy <= dyEnd; dy++) {
+        const y = cy + dy
+        const dxMax = Math.floor(Math.sqrt(r2 - dy * dy))
+        const xStart = Math.max(0, cx - dxMax)
+        const xEnd = Math.min(width - 1, cx + dxMax)
+        
+        // OPTIMIZATION 2: Incremental index
+        // Avoids recalculating `y * width + x` on every iteration
+        let idx = y * width + xStart
+        for (let x = xStart; x <= xEnd; x++) {
+          data[idx++] = biome
         }
       }
     }
 
     onStatus?.({ phase: "Filling gaps", progress: 0.55 })
 
-    // Fill gaps with multi-source BFS
-    const queue: number[] = []
+    // OPTIMIZATION 3: Pre-allocated TypedArray Queue
+    // Array.shift() is O(N). Using a pre-allocated TypedArray with head/tail pointers 
+    // turns queue operations into O(1) and prevents garbage collection overhead.
+    const queue = new Uint32Array(totalPixels)
+    let head = 0
+    let tail = 0
+    
     for (let i = 0; i < totalPixels; i++) {
-      if (data[i] !== UNASSIGNED) queue.push(i)
+      if (data[i] !== UNASSIGNED) queue[tail++] = i
     }
-    const totalUnassigned = totalPixels - queue.length
+    
+    const totalUnassigned = totalPixels - tail
     let filled = 0
-    const dirs = [-width, width, -1, 1]
-    while (queue.length > 0) {
-      const idx = queue.shift()!
-      const x = idx % width, y = Math.floor(idx / width)
+
+    while (head < tail) {
+      const idx = queue[head++]
       const biome = data[idx]
-      for (const d of dirs) {
-        const n = idx + d
-        if (n < 0 || n >= totalPixels) continue
-        if (Math.abs((n % width) - x) > 1) continue
+      const x = idx % width
+
+      // OPTIMIZATION 4: Unrolled bounds checking
+      // Replaces the loop over `dirs` and avoids Math.abs / modulo operations for wrap-around checks.
+      
+      // Left
+      if (x > 0) {
+        const n = idx - 1
         if (data[n] === UNASSIGNED) {
           data[n] = biome
-          queue.push(n)
+          queue[tail++] = n
           filled++
-          if (filled % 1000 === 0) {
+          if (filled % 1000 === 0 && totalUnassigned > 0) {
+            onStatus?.({ phase: "Filling gaps", progress: 0.55 + (filled / totalUnassigned) * 0.45 })
+          }
+        }
+      }
+      
+      // Right
+      if (x < width - 1) {
+        const n = idx + 1
+        if (data[n] === UNASSIGNED) {
+          data[n] = biome
+          queue[tail++] = n
+          filled++
+          if (filled % 1000 === 0 && totalUnassigned > 0) {
+            onStatus?.({ phase: "Filling gaps", progress: 0.55 + (filled / totalUnassigned) * 0.45 })
+          }
+        }
+      }
+
+      // Top
+      if (idx >= width) {
+        const n = idx - width
+        if (data[n] === UNASSIGNED) {
+          data[n] = biome
+          queue[tail++] = n
+          filled++
+          if (filled % 1000 === 0 && totalUnassigned > 0) {
+            onStatus?.({ phase: "Filling gaps", progress: 0.55 + (filled / totalUnassigned) * 0.45 })
+          }
+        }
+      }
+
+      // Bottom
+      if (idx < totalPixels - width) {
+        const n = idx + width
+        if (data[n] === UNASSIGNED) {
+          data[n] = biome
+          queue[tail++] = n
+          filled++
+          if (filled % 1000 === 0 && totalUnassigned > 0) {
             onStatus?.({ phase: "Filling gaps", progress: 0.55 + (filled / totalUnassigned) * 0.45 })
           }
         }
