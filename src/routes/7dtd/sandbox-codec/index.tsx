@@ -10,5 +10,17 @@ export const Route = createFileRoute('/7dtd/sandbox-codec/')({
 
 function SandboxCodecWrapper() {
   const { code } = Route.useSearch()
-  return <SandboxCodec urlCode={code} />
+  const navigate = Route.useNavigate()
+
+  return (
+    <SandboxCodec
+      urlCode={code}
+      onCodeChange={(newCode) =>
+        navigate({
+          search: (prev) => ({ ...prev, code: newCode }),
+          replace: true,
+        })
+      }
+    />
+  )
 }

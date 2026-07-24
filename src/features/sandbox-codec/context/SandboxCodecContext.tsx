@@ -1,5 +1,4 @@
-import { createContext, use, useState, useMemo, useEffect, useRef, type ReactNode } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { createContext, use, useState, useMemo, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { decodeSandboxCode, encodeSandboxCode, getDisabledOptionIds } from '@/features/sandbox-codec/core/codec'
 import { sandboxOptions, optionsById, getDisplayName } from '@/features/sandbox-codec/core/sandboxOptions'
 import type { SandboxOption } from '@/features/sandbox-codec/core/sandboxOptions'
@@ -17,36 +16,64 @@ function getValueSetLength(option: SandboxOption): number {
   return (vs.floatValues ?? vs.intValues ?? vs.boolValues ?? []).length
 }
 
-interface SandboxCodecContextValue {
-  values: Record<number, number>
+/* ------------------------------------------------------------------ *
+ * Contexts are split by "how often they change" / "who needs them", so
+ * a component that only needs e.g. actions never re-renders when
+ * `values` changes, and vice-versa. Each slice gets its own
+ * useMemo'd value so updating one can't invalidate another.
+ * ------------------------------------------------------------------ */
+
+// Stable across (almost) every render — safe for any component to
+// consume without incurring re-renders when unrelated state changes.
+interface SandboxActionsContextValue {
   setValue: (optionId: number, valueIndex: number) => void
-  decodeInput: string
   setDecodeInput: (value: string) => void
-  decodeWarnings: string[]
-  handleDecode: () => void
-  searchQuery: string
   setSearchQuery: (value: string) => void
-  activeTab: string
   setActiveTab: (value: string) => void
-  currentCode: string
-  disabledOptionIds: Set<number>
+  handleDecode: () => void
   resetAll: () => void
   handleRandomizeAll: () => void
   copyToClipboard: (text: string) => void
+}
+
+// Changes on every single option edit — the "hot" data. Keep this as
+// rarely-consumed-directly as possible (per-row components should get
+// their own single value as a prop instead, see EncodePanel/DecodePanel).
+interface SandboxValuesContextValue {
+  values: Record<number, number>
+  disabledOptionIds: Set<number>
+}
+
+// Changes on decode/search/tab interactions.
+interface SandboxUIContextValue {
+  decodeInput: string
+  decodeWarnings: string[]
+  searchQuery: string
+  activeTab: string
+  currentCode: string
+}
+
+// Recomputed whenever values or searchQuery change.
+interface SandboxDerivedContextValue {
   groupedOptions: Record<string, SandboxOption[]>
   changedOptions: SandboxOption[]
   filteredGroups: Record<string, SandboxOption[]>
   filteredChangedGroups: Record<string, SandboxOption[]>
 }
 
-const SandboxCodecContext = createContext<SandboxCodecContextValue | null>(null)
+const SandboxActionsContext = createContext<SandboxActionsContextValue | null>(null)
+const SandboxValuesContext = createContext<SandboxValuesContextValue | null>(null)
+const SandboxUIContext = createContext<SandboxUIContextValue | null>(null)
+const SandboxDerivedContext = createContext<SandboxDerivedContextValue | null>(null)
 
 interface SandboxCodecProviderProps {
   urlCode?: string
+  // URL-syncing is the route's job, not this context's — see routes/7dtd/sandbox-codec/index.tsx
+  onCodeChange?: (code: string | undefined) => void
   children: ReactNode
 }
 
-export function SandboxCodecProvider({ urlCode, children }: SandboxCodecProviderProps) {
+export function SandboxCodecProvider({ urlCode, onCodeChange, children }: SandboxCodecProviderProps) {
   const [values, setValues] = useState<Record<number, number>>(defaultValues)
   const [decodeInput, setDecodeInput] = useState('')
   const [decodeWarnings, setDecodeWarnings] = useState<string[]>([])
@@ -57,35 +84,45 @@ export function SandboxCodecProvider({ urlCode, children }: SandboxCodecProvider
   const disabledOptionIds = useMemo(() => getDisabledOptionIds(values), [values])
 
   const initializedFromUrl = useRef(false)
-  const navigate = useNavigate({ from: '/7dtd/sandbox-codec/' })
 
   // Initialize from URL on first mount only
   useEffect(() => {
     if (urlCode && !initializedFromUrl.current) {
       const { values: decoded } = decodeSandboxCode(urlCode)
       setValues(decoded)
-      setDecodeInput(urlCode) // populate decode input too
+      setDecodeInput(urlCode)
       initializedFromUrl.current = true
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // empty deps run only on mount
+  }, [])
 
-  // Sync currentCode back to URL (after init)
+  // Sync currentCode back out (after init). Purely a notification —
+  // this context has no idea it's feeding a router search param.
   useEffect(() => {
-    // Only update if initialized (or no urlCode was present, meaning we're starting fresh)
+    if (!onCodeChange) return
     if (initializedFromUrl.current || !urlCode) {
       const codeToSet = currentCode.length > 1 ? currentCode : undefined
       if (codeToSet !== urlCode) {
-        navigate({
-          search: (prev) => ({ ...prev, code: codeToSet }),
-          replace: true,
-        })
+        onCodeChange(codeToSet)
       }
     }
-  }, [currentCode, navigate, urlCode])
+  }, [currentCode, urlCode, onCodeChange])
 
-  const handleDecode = () => {
-    const trimmed = decodeInput.trim()
+  // Mirror decodeInput into a ref so handleDecode can stay referentially
+  // stable (empty dep array) without reading stale state. Using a
+  // functional setState updater here instead would run twice under
+  // StrictMode and double-fire the toast/decode side effects.
+  const decodeInputRef = useRef(decodeInput)
+  useEffect(() => {
+    decodeInputRef.current = decodeInput
+  }, [decodeInput])
+
+  const setValue = useCallback((optionId: number, valueIndex: number) => {
+    setValues((prev) => ({ ...prev, [optionId]: valueIndex }))
+  }, [])
+
+  const handleDecode = useCallback(() => {
+    const trimmed = decodeInputRef.current.trim()
     if (!trimmed) {
       toast.error('Please enter a code to decode.')
       return
@@ -98,17 +135,17 @@ export function SandboxCodecProvider({ urlCode, children }: SandboxCodecProvider
     } else {
       toast.success('Successfully decoded Sandbox Code.')
     }
-  }
+  }, [])
 
-  const resetAll = () => {
+  const resetAll = useCallback(() => {
     setValues(defaultValues)
     setDecodeInput('')
     setDecodeWarnings([])
     setSearchQuery('')
     toast.info('Reset to default values.')
-  }
+  }, [])
 
-  const handleRandomizeAll = () => {
+  const handleRandomizeAll = useCallback(() => {
     const newValues: Record<number, number> = {}
 
     for (const opt of sandboxOptions) {
@@ -130,19 +167,12 @@ export function SandboxCodecProvider({ urlCode, children }: SandboxCodecProvider
 
     setValues(newValues)
     toast.info('Randomized all options.')
-  }
+  }, [])
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text)
     toast.success('Copied to clipboard!')
-  }
-
-  const setValue = (optionId: number, valueIndex: number) => {
-    setValues((prev) => ({
-      ...prev,
-      [optionId]: valueIndex,
-    }))
-  }
+  }, [])
 
   const groupedOptions = useMemo(() => {
     const groups: Record<string, SandboxOption[]> = {}
@@ -196,35 +226,83 @@ export function SandboxCodecProvider({ urlCode, children }: SandboxCodecProvider
     return groups
   }, [searchQuery, groupedChangedOptions])
 
-  const value: SandboxCodecContextValue = {
-    values,
+  const actionsValue = useMemo<SandboxActionsContextValue>(() => ({
     setValue,
-    decodeInput,
     setDecodeInput,
-    decodeWarnings,
-    handleDecode,
-    searchQuery,
     setSearchQuery,
-    activeTab,
     setActiveTab,
-    currentCode,
-    disabledOptionIds,
+    handleDecode,
     resetAll,
     handleRandomizeAll,
     copyToClipboard,
+  }), [setValue, handleDecode, resetAll, handleRandomizeAll, copyToClipboard])
+
+  const valuesValue = useMemo<SandboxValuesContextValue>(() => ({
+    values,
+    disabledOptionIds,
+  }), [values, disabledOptionIds])
+
+  const uiValue = useMemo<SandboxUIContextValue>(() => ({
+    decodeInput,
+    decodeWarnings,
+    searchQuery,
+    activeTab,
+    currentCode,
+  }), [decodeInput, decodeWarnings, searchQuery, activeTab, currentCode])
+
+  const derivedValue = useMemo<SandboxDerivedContextValue>(() => ({
     groupedOptions,
     changedOptions,
     filteredGroups,
     filteredChangedGroups,
-  }
+  }), [groupedOptions, changedOptions, filteredGroups, filteredChangedGroups])
 
-  return <SandboxCodecContext value={value}>{children}</SandboxCodecContext>
+  return (
+    <SandboxActionsContext value={actionsValue}>
+      <SandboxValuesContext value={valuesValue}>
+        <SandboxUIContext value={uiValue}>
+          <SandboxDerivedContext value={derivedValue}>
+            {children}
+          </SandboxDerivedContext>
+        </SandboxUIContext>
+      </SandboxValuesContext>
+    </SandboxActionsContext>
+  )
 }
 
-export function useSandboxCodec() {
-  const ctx = use(SandboxCodecContext)
-  if (!ctx) {
-    throw new Error('useSandboxCodec must be used within a SandboxCodecProvider')
-  }
+export function useSandboxActions() {
+  const ctx = use(SandboxActionsContext)
+  if (!ctx) throw new Error('useSandboxActions must be used within a SandboxCodecProvider')
   return ctx
+}
+
+export function useSandboxValues() {
+  const ctx = use(SandboxValuesContext)
+  if (!ctx) throw new Error('useSandboxValues must be used within a SandboxCodecProvider')
+  return ctx
+}
+
+export function useSandboxUI() {
+  const ctx = use(SandboxUIContext)
+  if (!ctx) throw new Error('useSandboxUI must be used within a SandboxCodecProvider')
+  return ctx
+}
+
+export function useSandboxDerived() {
+  const ctx = use(SandboxDerivedContext)
+  if (!ctx) throw new Error('useSandboxDerived must be used within a SandboxCodecProvider')
+  return ctx
+}
+
+// Convenience hook for components that genuinely need "a bit of
+// everything" (e.g. the top-level view). Fine to use here because it
+// only wraps layout — the heavy per-option lists use the granular
+// hooks above plus React.memo instead.
+export function useSandboxCodec() {
+  return {
+    ...useSandboxActions(),
+    ...useSandboxValues(),
+    ...useSandboxUI(),
+    ...useSandboxDerived(),
+  }
 }

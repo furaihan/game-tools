@@ -1,19 +1,23 @@
+import { memo } from 'react'
 import { type SandboxOption, getDisplayName, getDescription } from '@/features/sandbox-codec/core/sandboxOptions'
 import { OptionControl } from './OptionControl'
 import { Badge } from '@/shared/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import { HelpCircle } from 'lucide-react'
-import { useSandboxCodec } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
 interface OptionRowProps {
   option: SandboxOption
+  currentValueIndex: number
+  isDisabled: boolean
   isReadOnly?: boolean
 }
 
-export function OptionRow({ option, isReadOnly }: OptionRowProps) {
-  const { values, disabledOptionIds } = useSandboxCodec()
-  const currentValueIndex = values[option.id] ?? option.defaultValueIndex
-  const isDisabled = disabledOptionIds.has(option.id)
+// Pure/presentational: everything it needs is passed as props, so
+// React.memo can do a plain shallow-compare (option/currentValueIndex/
+// isDisabled/isReadOnly are all primitives or a stable module-level
+// object) and skip re-rendering rows whose value didn't actually change,
+// even when a *different* option elsewhere changes.
+function OptionRowImpl({ option, currentValueIndex, isDisabled, isReadOnly }: OptionRowProps) {
   const isDefault = currentValueIndex === option.defaultValueIndex
   const description = getDescription(option.enumName)
 
@@ -47,3 +51,5 @@ export function OptionRow({ option, isReadOnly }: OptionRowProps) {
     </div>
   )
 }
+
+export const OptionRow = memo(OptionRowImpl)

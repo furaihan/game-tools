@@ -10,16 +10,21 @@ import { SandboxCodecProvider, useSandboxCodec } from '@/features/sandbox-codec/
 
 interface SandboxCodecProps {
   urlCode?: string
+  onCodeChange?: (code: string | undefined) => void
 }
 
-export function SandboxCodec({ urlCode }: SandboxCodecProps) {
+export function SandboxCodec({ urlCode, onCodeChange }: SandboxCodecProps) {
   return (
-    <SandboxCodecProvider urlCode={urlCode}>
+    <SandboxCodecProvider urlCode={urlCode} onCodeChange={onCodeChange}>
       <SandboxCodecView />
     </SandboxCodecProvider>
   )
 }
 
+// This top-level view is cheap to re-render (it's just layout + a
+// handful of buttons), so using the composed `useSandboxCodec()` hook
+// here is fine — the expensive part (150+ option rows) lives in
+// EncodePanel/DecodePanel, which use the granular hooks instead.
 function SandboxCodecView() {
   const {
     currentCode,

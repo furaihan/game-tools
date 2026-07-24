@@ -4,18 +4,13 @@ import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { AlertCircle, Settings2 } from 'lucide-react'
 import { OptionRow } from './OptionRow'
-import { useSandboxCodec } from '@/features/sandbox-codec/context/SandboxCodecContext'
+import { useSandboxActions, useSandboxUI, useSandboxValues, useSandboxDerived } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
 export function DecodePanel() {
-  const {
-    decodeInput,
-    setDecodeInput,
-    handleDecode,
-    decodeWarnings,
-    filteredChangedGroups,
-    changedOptions,
-    setActiveTab,
-  } = useSandboxCodec()
+  const { setDecodeInput, handleDecode, setActiveTab } = useSandboxActions()
+  const { decodeInput, decodeWarnings } = useSandboxUI()
+  const { values, disabledOptionIds } = useSandboxValues()
+  const { filteredChangedGroups, changedOptions } = useSandboxDerived()
 
   return (
     <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
@@ -63,7 +58,13 @@ export function DecodePanel() {
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{cat}</h4>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {opts.map((opt) => (
-                  <OptionRow key={opt.id} option={opt} isReadOnly />
+                  <OptionRow
+                    key={opt.id}
+                    option={opt}
+                    currentValueIndex={values[opt.id] ?? opt.defaultValueIndex}
+                    isDisabled={disabledOptionIds.has(opt.id)}
+                    isReadOnly
+                  />
                 ))}
               </div>
             </div>

@@ -1,10 +1,11 @@
+import { memo } from 'react'
 import type { SandboxOption } from '@/features/sandbox-codec/core/sandboxOptions'
 import { getValueSetValues, getValueSetDisplay } from '@/features/sandbox-codec/core/valueSets'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useSandboxCodec } from '@/features/sandbox-codec/context/SandboxCodecContext'
+import { useSandboxActions } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
 interface OptionControlProps {
   option: SandboxOption
@@ -13,8 +14,11 @@ interface OptionControlProps {
   isReadOnly?: boolean
 }
 
-export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnly }: OptionControlProps) {
-  const { setValue } = useSandboxCodec()
+// Only pulls `setValue` from the actions context, which has a stable
+// reference across renders — so this never re-renders due to *other*
+// options' values changing, only when its own props change.
+function OptionControlImpl({ option, currentValueIndex, isDisabled, isReadOnly }: OptionControlProps) {
+  const { setValue } = useSandboxActions()
   const isDefault = currentValueIndex === option.defaultValueIndex
   const values = getValueSetValues(option.valueSetName, option.type)
   const currentItem = values.find((v) => v.index === currentValueIndex) || values[0]
@@ -77,3 +81,5 @@ export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnl
     </div>
   )
 }
+
+export const OptionControl = memo(OptionControlImpl)
