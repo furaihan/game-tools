@@ -19,6 +19,7 @@ import { Dices, Grid3X3, Filter, Download, Copy, Shuffle } from "lucide-react";
 import type { AlgorithmName } from "@/features/biome-generator/types/biome-generator";
 import { RiverControls } from "@/features/river-generator/components/RiverControls";
 import { Separator } from "@/shared/ui/separator";
+import { useState } from "react";
 
 const ALGORITHMS: AlgorithmName[] = [
   "Random Seeds",
@@ -56,6 +57,13 @@ export function GeneratorControls() {
     copySeed,
     resetToDefaults,
   } = useBiomeGenerator();
+
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  const handleRandomizeSeed = () => {
+    setIsSpinning(true);
+    randomizeSeed();
+  };
 
   return (
     <TooltipProvider>
@@ -112,10 +120,15 @@ export function GeneratorControls() {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={randomizeSeed}
+                      onClick={handleRandomizeSeed}
                       title="Randomize seed"
                     >
-                      <Dices className="h-4 w-4" />
+                      <Dices
+                        className={
+                          "h-4 w-4" + (isSpinning ? " animate-dice-spin" : "")
+                        }
+                        onAnimationEnd={() => setIsSpinning(false)}
+                      />
                     </Button>
                   }
                 />
