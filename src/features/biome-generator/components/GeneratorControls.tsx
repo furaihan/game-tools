@@ -17,6 +17,8 @@ import {
 } from "@/shared/ui/tooltip";
 import { Dices, Grid3X3, Filter, Download, Copy, Shuffle } from "lucide-react";
 import type { AlgorithmName } from "@/features/biome-generator/types/biome-generator";
+import { RiverControls } from "@/features/river-generator/components/RiverControls";
+import { Separator } from "@/shared/ui/separator";
 
 const ALGORITHMS: AlgorithmName[] = [
   "Random Seeds",
@@ -243,6 +245,10 @@ export function GeneratorControls() {
               </TooltipContent>
             </Tooltip>
           </div>
+
+          <Separator />
+
+          <RiverControls />
 
           <div className="space-y-2">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">

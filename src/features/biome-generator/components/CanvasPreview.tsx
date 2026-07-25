@@ -15,7 +15,7 @@ function calcFitScale(
 }
 
 export function CanvasPreview() {
-  const { biomeMap, biomes, isGenerating, isFiltering, generationStatus } = useBiomeGenerator()
+  const { biomeMap, biomes, isGenerating, isFiltering, generationStatus, waterMap, waterColor, isGeneratingRivers, riverGenerationStatus } = useBiomeGenerator()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
 
@@ -50,10 +50,16 @@ export function CanvasPreview() {
       return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 0, b: 0 }
     }
     const cache = biomes.map(b => hexToRgb(b.color))
+    const waterRgb = hexToRgb(waterColor)
 
     for (let i = 0; i < biomeMap.data.length; i++) {
-      const biomeIdx = biomeMap.data[i]
-      const c = cache[biomeIdx] || { r: 0, g: 0, b: 0 }
+      let c
+      if (waterMap && waterMap.data[i] === 1) {
+        c = waterRgb
+      } else {
+        const biomeIdx = biomeMap.data[i]
+        c = cache[biomeIdx] || { r: 0, g: 0, b: 0 }
+      }
       const p = i * 4
       img.data[p] = c.r
       img.data[p + 1] = c.g
@@ -64,7 +70,7 @@ export function CanvasPreview() {
     ctx.putImageData(img, 0, 0)
 
     requestAnimationFrame(() => fit())
-  }, [biomeMap, biomes, fit])
+  }, [biomeMap, biomes, fit, waterMap, waterColor])
 
   useEffect(() => {
     const el = viewportRef.current
@@ -96,8 +102,15 @@ export function CanvasPreview() {
       const x = Math.floor((e.clientX - r.left) / scale)
       const y = Math.floor((e.clientY - r.top) / scale)
       if (x >= 0 && x < biomeMap.width && y >= 0 && y < biomeMap.height) {
-        const b = biomeMap.data[y * biomeMap.width + x]
-        setHoverInfo({ x, y, name: biomes[b]?.name || 'Unknown' })
+        const idx = y * biomeMap.width + x
+        let name: string
+        if (waterMap && waterMap.data[idx] === 1) {
+          name = 'Water (River)'
+        } else {
+          const b = biomeMap.data[idx]
+          name = biomes[b]?.name || 'Unknown'
+        }
+        setHoverInfo({ x, y, name })
       } else {
         setHoverInfo(null)
       }
@@ -155,7 +168,7 @@ export function CanvasPreview() {
               <canvas
                 ref={canvasRef}
                 className={`shadow-2xl transition-opacity duration-300 ${
-                  isGenerating || isFiltering ? 'opacity-50' : 'opacity-100'
+                  isGenerating || isFiltering || isGeneratingRivers ? 'opacity-50' : 'opacity-100'
                 }`}
                 style={{ imageRendering: scale >= 1 ? 'pixelated' : 'auto' }}
               />
@@ -165,14 +178,14 @@ export function CanvasPreview() {
 
       </div>
 
-      {(isGenerating || isFiltering) && (
+      {(isGenerating || isFiltering || isGeneratingRivers) && (
         <Dialog open={true} onOpenChange={() => {}} disablePointerDismissal={true}>
           <DialogContent className="sm:max-w-sm bg-card" showCloseButton={false}>
             <div className="space-y-4 py-4">
               <div className="flex items-center justify-center gap-3">
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                 <span className="font-mono text-sm font-medium">
-                  {isGenerating ? 'Generating Biome Layout…' : 'Applying Majority Filter…'}
+                  {isGenerating ? 'Generating Biome Layout…' : isFiltering ? 'Applying Majority Filter…' : 'Generating Rivers…'}
                 </span>
               </div>
               {isGenerating && generationStatus && (
@@ -180,6 +193,14 @@ export function CanvasPreview() {
                   <Progress value={generationStatus.progress * 100} />
                   <p className="text-xs text-muted-foreground text-center font-mono">
                     {generationStatus.phase}
+                  </p>
+                </div>
+              )}
+              {isGeneratingRivers && riverGenerationStatus && (
+                <div className="space-y-2">
+                  <Progress value={riverGenerationStatus.progress * 100} />
+                  <p className="text-xs text-muted-foreground text-center font-mono">
+                    {riverGenerationStatus.phase}
                   </p>
                 </div>
               )}

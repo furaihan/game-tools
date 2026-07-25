@@ -1,5 +1,6 @@
 import type { AlgorithmName, BiomeDef } from '../types/biome-generator'
 import { generators } from '../core/index'
+import { getErrorMessage } from '@/shared/utils/utils'
 
 self.onmessage = (e: MessageEvent<{
   width: number
@@ -21,7 +22,7 @@ self.onmessage = (e: MessageEvent<{
     })
 
     self.postMessage({ type: 'success', data: result })
-  } catch (err: any) {
-    self.postMessage({ type: 'error', error: err.message })
+  } catch (err: unknown) {
+    self.postMessage({ type: 'error', error: getErrorMessage(err) })
   }
 }

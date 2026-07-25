@@ -37,3 +37,5 @@ __pycache__/
 graphify-out/
 .graphify_*.json
 .graphify_python
+
+*.zip
