@@ -117,7 +117,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus | null>(null)
   const [waterMap, setWaterMap] = useState<WaterMap | null>(null)
-  const [waterColor, setWaterColor] = useState('#0000ff')
+  const [waterColor, setWaterColor] = useState('#001234')
   const [isGeneratingRivers, setIsGeneratingRivers] = useState(false)
   const [riverParams, setRiverParamsState] = useState({
     branchCount: 4,
@@ -160,7 +160,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setIsFiltered(false)
     setError(null)
     setWaterMap(null)
-    setWaterColor('#0000ff')
+    setWaterColor('#001234')
     setRiverParamsState({ branchCount: 4, mainStemWidth: 8, branchWidth: 4, noiseScale: 150 })
   }, [])
 
