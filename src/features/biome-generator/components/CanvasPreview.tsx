@@ -1,5 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { useBiomeGenerator } from '@/features/biome-generator/context/biome-generator-context'
+import { Dialog, DialogContent } from '@/shared/ui/dialog'
+import { Progress } from '@/shared/ui/progress'
 
 function calcFitScale(
   imageW: number,
@@ -13,7 +15,7 @@ function calcFitScale(
 }
 
 export function CanvasPreview() {
-  const { biomeMap, biomes, isGenerating, isFiltering } = useBiomeGenerator()
+  const { biomeMap, biomes, isGenerating, isFiltering, generationStatus } = useBiomeGenerator()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
 
@@ -161,14 +163,30 @@ export function CanvasPreview() {
           </div>
         )}
 
-        {(isGenerating || isFiltering) && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-            <div className="animate-pulse rounded-lg border bg-card px-6 py-3 font-mono text-xs uppercase tracking-widest text-primary shadow-2xl">
-              {isGenerating ? 'Generating...' : 'Filtering...'}
-            </div>
-          </div>
-        )}
       </div>
+
+      {(isGenerating || isFiltering) && (
+        <Dialog open={true} onOpenChange={() => {}} disablePointerDismissal={true}>
+          <DialogContent className="sm:max-w-sm bg-card" showCloseButton={false}>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center justify-center gap-3">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <span className="font-mono text-sm font-medium">
+                  {isGenerating ? 'Generating Biome Layout…' : 'Applying Majority Filter…'}
+                </span>
+              </div>
+              {isGenerating && generationStatus && (
+                <div className="space-y-2">
+                  <Progress value={generationStatus.progress * 100} />
+                  <p className="text-xs text-muted-foreground text-center font-mono">
+                    {generationStatus.phase}
+                  </p>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <div className="flex h-8 shrink-0 items-center justify-between border-t bg-card px-6 font-mono text-[10px] text-muted-foreground">
         <span>CURSOR: {hoverInfo ? `X:${hoverInfo.x} Y:${hoverInfo.y}` : 'NO_ACTIVE_SELECTION'}</span>

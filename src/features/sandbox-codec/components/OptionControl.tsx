@@ -1,19 +1,24 @@
+import { memo } from 'react'
 import type { SandboxOption } from '@/features/sandbox-codec/core/sandboxOptions'
 import { getValueSetValues, getValueSetDisplay } from '@/features/sandbox-codec/core/valueSets'
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useSandboxActions } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
 interface OptionControlProps {
   option: SandboxOption
   currentValueIndex: number
   isDisabled: boolean
   isReadOnly?: boolean
-  onSetValue?: (optionId: number, valueIndex: number) => void
 }
 
-export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnly, onSetValue }: OptionControlProps) {
+// Only pulls `setValue` from the actions context, which has a stable
+// reference across renders — so this never re-renders due to *other*
+// options' values changing, only when its own props change.
+function OptionControlImpl({ option, currentValueIndex, isDisabled, isReadOnly }: OptionControlProps) {
+  const { setValue } = useSandboxActions()
   const isDefault = currentValueIndex === option.defaultValueIndex
   const values = getValueSetValues(option.valueSetName, option.type)
   const currentItem = values.find((v) => v.index === currentValueIndex) || values[0]
@@ -36,7 +41,7 @@ export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnl
           checked={isChecked}
           onCheckedChange={(checked) => {
             const idxItem = values.find((v) => v.value === String(checked))
-            if (idxItem && onSetValue) onSetValue(option.id, idxItem.index)
+            if (idxItem) setValue(option.id, idxItem.index)
           }}
         />
         <Label className="text-sm font-medium">
@@ -55,7 +60,7 @@ export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnl
         variant="outline"
         size="icon"
         className="h-8 w-8 flex-shrink-0"
-        onClick={() => onSetValue?.(option.id, values[safeIndex - 1].index)}
+        onClick={() => setValue(option.id, values[safeIndex - 1].index)}
         disabled={safeIndex === 0 || isDisabled}
       >
         <ChevronLeft className="h-4 w-4" />
@@ -68,7 +73,7 @@ export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnl
         variant="outline"
         size="icon"
         className="h-8 w-8 flex-shrink-0"
-        onClick={() => onSetValue?.(option.id, values[safeIndex + 1].index)}
+        onClick={() => setValue(option.id, values[safeIndex + 1].index)}
         disabled={safeIndex === values.length - 1 || isDisabled}
       >
         <ChevronRight className="h-4 w-4" />
@@ -76,3 +81,5 @@ export function OptionControl({ option, currentValueIndex, isDisabled, isReadOnl
     </div>
   )
 }
+
+export const OptionControl = memo(OptionControlImpl)

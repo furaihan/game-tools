@@ -15,7 +15,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/shared/ui/tooltip";
-import { Progress } from "@/shared/ui/progress";
 import { Dices, Grid3X3, Filter, Download, Copy, Shuffle } from "lucide-react";
 import type { AlgorithmName } from "@/features/biome-generator/types/biome-generator";
 
@@ -48,8 +47,8 @@ export function GeneratorControls() {
     isFiltering,
     isFiltered,
     error,
-    generationStatus,
     generate,
+    randomizeAndGenerate,
     applyMajorityFilter,
     exportPNG,
     copySeed,
@@ -199,9 +198,10 @@ export function GeneratorControls() {
               className="w-full gap-2"
               onClick={() => {
                 if (biomeMap) {
-                  randomizeSeed();
+                  randomizeAndGenerate();
+                } else {
+                  generate();
                 }
-                generate();
               }}
               disabled={isGenerating || isFiltering}
             >
@@ -209,18 +209,6 @@ export function GeneratorControls() {
               {isGenerating ? "Generating..." : "Randomize & Regenerate"}
             </Button>
           </div>
-
-          {isGenerating && generationStatus && (
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                Progress
-              </Label>
-              <Progress value={generationStatus.progress * 100} />
-              <p className="text-[10px] text-muted-foreground text-center">
-                {generationStatus.phase}
-              </p>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">

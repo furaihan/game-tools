@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { type SandboxOption, getDisplayName, getDescription } from '@/features/sandbox-codec/core/sandboxOptions'
 import { OptionControl } from './OptionControl'
 import { Badge } from '@/shared/ui/badge'
@@ -9,10 +10,14 @@ interface OptionRowProps {
   currentValueIndex: number
   isDisabled: boolean
   isReadOnly?: boolean
-  onSetValue?: (optionId: number, valueIndex: number) => void
 }
 
-export function OptionRow({ option, currentValueIndex, isDisabled, isReadOnly, onSetValue }: OptionRowProps) {
+// Pure/presentational: everything it needs is passed as props, so
+// React.memo can do a plain shallow-compare (option/currentValueIndex/
+// isDisabled/isReadOnly are all primitives or a stable module-level
+// object) and skip re-rendering rows whose value didn't actually change,
+// even when a *different* option elsewhere changes.
+function OptionRowImpl({ option, currentValueIndex, isDisabled, isReadOnly }: OptionRowProps) {
   const isDefault = currentValueIndex === option.defaultValueIndex
   const description = getDescription(option.enumName)
 
@@ -41,9 +46,10 @@ export function OptionRow({ option, currentValueIndex, isDisabled, isReadOnly, o
           currentValueIndex={currentValueIndex}
           isDisabled={isDisabled}
           isReadOnly={isReadOnly}
-          onSetValue={onSetValue}
         />
       </div>
     </div>
   )
 }
+
+export const OptionRow = memo(OptionRowImpl)
