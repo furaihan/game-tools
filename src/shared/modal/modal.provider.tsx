@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useState, useMemo, useRef, memo } from 'react'
-import { X } from 'lucide-react'
+import { XIcon } from 'lucide-react'
 import { ModalContext } from './modal.context'
 import type { Modal, ModalConfig, ModalSize } from './modal.type'
 import type { ReactNode } from 'react'
@@ -159,7 +159,7 @@ const ModalRenderer = memo(function ModalRenderer({
               type="button"
                 aria-label="Tutup"
             >
-              <X className="h-4 w-4" />
+              <XIcon className="h-4 w-4" />
                 <span className="sr-only">Tutup</span>
             </button>
           )}

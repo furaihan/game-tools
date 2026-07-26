@@ -4,7 +4,7 @@ import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
-import { Droplets, X } from 'lucide-react'
+import { DropletsIcon, XIcon } from 'lucide-react'
 
 export function RiverControls() {
   const {
@@ -130,7 +130,7 @@ export function RiverControls() {
                   onClick={generateRivers}
                   disabled={disabled}
                 >
-                  <Droplets className="h-4 w-4" />
+                  <DropletsIcon className="h-4 w-4" />
                   {isGeneratingRivers ? 'Generating...' : waterMap ? 'Regenerate Rivers' : 'Generate Rivers'}
                 </Button>
               }
@@ -147,7 +147,7 @@ export function RiverControls() {
               onClick={clearRivers}
               disabled={isGeneratingRivers}
             >
-              <X className="h-4 w-4" />
+              <XIcon className="h-4 w-4" />
               Clear Rivers
             </Button>
           )}

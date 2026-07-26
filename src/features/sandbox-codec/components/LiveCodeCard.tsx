@@ -1,7 +1,7 @@
 import { Input } from '@/shared/ui/input'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Copy } from 'lucide-react'
+import { CopyIcon } from 'lucide-react'
 
 interface LiveCodeCardProps {
   currentCode: string
@@ -20,7 +20,7 @@ export function LiveCodeCard({ currentCode, onCopy }: LiveCodeCardProps) {
       <CardContent className="py-2 pb-4 flex flex-col sm:flex-row gap-2">
         <Input readOnly value={currentCode} className="font-mono text-primary font-medium" />
         <Button onClick={onCopy}>
-          <Copy className="w-4 h-4 mr-2" />
+          <CopyIcon className="w-4 h-4 mr-2" />
           Copy
         </Button>
       </CardContent>

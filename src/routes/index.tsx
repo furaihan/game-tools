@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Gamepad2, PandaIcon } from 'lucide-react'
+import { Gamepad2Icon, PandaIcon } from 'lucide-react'
 import { tools } from '@/shared/tool-registry/tool-list'
 
 export const Route = createFileRoute('/')({
@@ -13,7 +13,7 @@ function HomePage() {
       <div className="mx-auto max-w-5xl">
         <div className="mb-8">
           <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-            <Gamepad2 className="h-5 w-5 text-primary" />
+            <Gamepad2Icon className="h-5 w-5 text-primary" />
             <PandaIcon className="h-5 w-5 text-primary" />
             Available Tools
           </h2>

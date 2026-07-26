@@ -4,7 +4,7 @@ import { getValueSetValues, getValueSetDisplay } from '@/features/sandbox-codec/
 import { Switch } from '@/shared/ui/switch'
 import { Label } from '@/shared/ui/label'
 import { Button } from '@/shared/ui/button'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { useSandboxActions } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
 interface OptionControlProps {
@@ -63,7 +63,7 @@ function OptionControlImpl({ option, currentValueIndex, isDisabled, isReadOnly }
         onClick={() => setValue(option.id, values[safeIndex - 1].index)}
         disabled={safeIndex === 0 || isDisabled}
       >
-        <ChevronLeft className="h-4 w-4" />
+        <ChevronLeftIcon className="h-4 w-4" />
       </Button>
       <div className={`w-[130px] text-center font-medium text-sm px-2 py-1.5 rounded-md border ${!isDefault ? 'border-primary bg-primary/5' : 'border-transparent'}`}>
         {getValueSetDisplay(option.valueSetName, option.type, currentValueIndex)}
@@ -76,7 +76,7 @@ function OptionControlImpl({ option, currentValueIndex, isDisabled, isReadOnly }
         onClick={() => setValue(option.id, values[safeIndex + 1].index)}
         disabled={safeIndex === values.length - 1 || isDisabled}
       >
-        <ChevronRight className="h-4 w-4" />
+        <ChevronRightIcon className="h-4 w-4" />
       </Button>
     </div>
   )

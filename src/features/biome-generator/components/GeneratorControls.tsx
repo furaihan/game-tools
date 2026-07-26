@@ -15,7 +15,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/shared/ui/tooltip";
-import { Dices, Grid3X3, Filter, Download, Copy, Shuffle } from "lucide-react";
+import { DicesIcon, Grid3X3Icon, FilterIcon, DownloadIcon, CopyIcon, ShuffleIcon } from "lucide-react";
 import type { AlgorithmName } from "@/features/biome-generator/types/biome-generator";
 import { RiverControls } from "@/features/river-generator/components/RiverControls";
 import { Separator } from "@/shared/ui/separator";
@@ -123,7 +123,7 @@ export function GeneratorControls() {
                       onClick={handleRandomizeSeed}
                       title="Randomize seed"
                     >
-                      <Dices
+                      <DicesIcon
                         className={
                           "h-4 w-4" + (isSpinning ? " animate-dice-spin" : "")
                         }
@@ -190,7 +190,7 @@ export function GeneratorControls() {
                     }}
                     disabled={isGenerating || isFiltering}
                   >
-                    <Grid3X3 className="h-4 w-4" />
+                    <Grid3X3Icon className="h-4 w-4" />
                     {isGenerating
                       ? "Generating..."
                       : biomeMap
@@ -220,7 +220,7 @@ export function GeneratorControls() {
               }}
               disabled={isGenerating || isFiltering}
             >
-              <Shuffle className="h-4 w-4" />
+              <ShuffleIcon className="h-4 w-4" />
               {isGenerating ? "Generating..." : "Randomize & Regenerate"}
             </Button>
           </div>
@@ -240,7 +240,7 @@ export function GeneratorControls() {
                       !biomeMap || isGenerating || isFiltering || isFiltered
                     }
                   >
-                    <Filter className="h-4 w-4" />
+                    <FilterIcon className="h-4 w-4" />
                     {isFiltering
                       ? "Filtering..."
                       : isFiltered
@@ -276,7 +276,7 @@ export function GeneratorControls() {
                     onClick={exportPNG}
                     disabled={!biomeMap || isGenerating || isFiltering}
                   >
-                    <Download className="h-4 w-4" />
+                    <DownloadIcon className="h-4 w-4" />
                     Export PNG
                   </Button>
                 }
@@ -291,7 +291,7 @@ export function GeneratorControls() {
                     className="w-full gap-2"
                     onClick={copySeed}
                   >
-                    <Copy className="h-4 w-4" />
+                    <CopyIcon className="h-4 w-4" />
                     Copy Seed
                   </Button>
                 }

@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@/shared/ui/tooltip";
 import { Button } from "@/shared/ui/button";
-import { Moon, Sun, Gamepad2, ChevronDown } from "lucide-react";
+import { MoonIcon, SunIcon, Gamepad2Icon, ChevronDownIcon } from "lucide-react";
 import { ThemeProvider, useTheme } from "@/app/theme/theme-context";
 import { tools } from "@/shared/tool-registry/tool-list";
 import {
@@ -28,7 +28,7 @@ function ThemeToggle() {
           onClick={toggle}
           className="h-8 w-8 text-muted-foreground hover:text-foreground animate-pulse"
         >
-          {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          {isDark ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
         </Button>
       </TooltipTrigger>
       <TooltipContent>
@@ -56,7 +56,7 @@ export default function App() {
           <header className="flex h-14 items-center justify-between border-b bg-background px-4">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <Gamepad2 className="h-5 w-5 text-primary" />
+                <Gamepad2Icon className="h-5 w-5 text-primary" />
                 <h1 className="text-sm font-semibold tracking-tight">
                   Game Tools
                 </h1>
@@ -97,7 +97,7 @@ export default function App() {
                         }`}
                       >
                         {category}
-                        <ChevronDown className="h-4 w-4" />
+                        <ChevronDownIcon className="h-4 w-4" />
                         {isActive && (
                           <span className="absolute -bottom-px inset-x-3 h-0.5 rounded-sm bg-primary" />
                         )}

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useBiomeGenerator } from '@/features/biome-generator/context/biome-generator-context'
-import { Plus, Trash2 } from 'lucide-react'
+import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { Button } from '@/shared/ui/button'
 import {
   Tooltip,
@@ -55,7 +55,7 @@ export function BiomeList() {
                   className="h-6 w-6"
                   onClick={addBiome}
                 >
-                  <Plus className="h-4 w-4" />
+                  <PlusIcon className="h-4 w-4" />
                 </Button>
               }
             />
@@ -95,7 +95,7 @@ export function BiomeList() {
                           className="h-6 w-6 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"
                           onClick={() => removeBiome(i)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2Icon className="h-4 w-4" />
                         </Button>
                       }
                     />
