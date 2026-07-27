@@ -21,6 +21,7 @@ interface BiomeGeneratorState {
     mainStemWidth: number
     branchWidth: number
     noiseScale: number
+    createLandBridge: boolean
   }
   riverGenerationStatus: GenerationStatus | null
 }
@@ -39,7 +40,7 @@ interface BiomeGeneratorActions {
   copySeed: () => void
   resetToDefaults: () => void
   setWaterColor: (color: string) => void
-  setRiverParams: (params: Partial<{ branchCount: number; mainStemWidth: number; branchWidth: number; noiseScale: number }>) => void
+  setRiverParams: (params: Partial<{ branchCount: number; mainStemWidth: number; branchWidth: number; noiseScale: number; createLandBridge: boolean }>) => void
   generateRivers: () => void
   clearRivers: () => void
 }
@@ -124,6 +125,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     mainStemWidth: 8,
     branchWidth: 4,
     noiseScale: 150,
+    createLandBridge: false,
   })
   const [riverGenerationStatus, setRiverGenerationStatus] = useState<GenerationStatus | null>(null)
   const [riverNonce, setRiverNonce] = useState(0)
@@ -161,7 +163,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setError(null)
     setWaterMap(null)
     setWaterColor('#001234')
-    setRiverParamsState({ branchCount: 4, mainStemWidth: 8, branchWidth: 4, noiseScale: 150 })
+    setRiverParamsState({ branchCount: 4, mainStemWidth: 8, branchWidth: 4, noiseScale: 150, createLandBridge: false })
   }, [])
 
   const runGeneration = useCallback((seedToUse: number) => {
@@ -366,6 +368,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
       mainStemWidth: riverParams.mainStemWidth,
       branchWidth: riverParams.branchWidth,
       noiseScale: riverParams.noiseScale,
+      createLandBridge: riverParams.createLandBridge,
     })
   }, [biomeMap, riverParams, riverNonce])
 

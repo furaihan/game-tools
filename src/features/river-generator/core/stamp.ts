@@ -25,3 +25,26 @@ export function stampCircle(
     }
   }
 }
+
+export function strokeLineTapered(
+  data: Uint8Array,
+  width: number,
+  height: number,
+  points: [number, number][],
+  startRadius: number,
+  endRadius: number,
+  value: number,
+): void {
+  const len = points.length
+  if (len === 0) return
+  if (len === 1) {
+    stampCircle(data, width, height, points[0][0], points[0][1], endRadius, value)
+    return
+  }
+  for (let i = 0; i < len; i++) {
+    const t = i / (len - 1)
+    const r = startRadius + (endRadius - startRadius) * t
+    const [px, py] = points[i]
+    stampCircle(data, width, height, px, py, r, value)
+  }
+}

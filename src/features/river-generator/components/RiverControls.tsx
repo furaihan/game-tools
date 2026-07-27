@@ -3,6 +3,7 @@ import { useBiomeGenerator } from '@/features/biome-generator/context/biome-gene
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { Switch } from '@/shared/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 import { DropletsIcon, XIcon } from 'lucide-react'
 
@@ -84,6 +85,15 @@ export function RiverControls() {
             value={riverParams.noiseScale}
             onChange={(e) => setRiverParams({ noiseScale: Math.max(50, Math.min(500, parseInt(e.target.value) || 150)) })}
             className="font-mono text-sm"
+            disabled={disabled}
+          />
+        </div>
+
+        <div className="flex items-center justify-between py-1">
+          <Label className="text-[10px] text-muted-foreground">Create Land Bridge</Label>
+          <Switch
+            checked={riverParams.createLandBridge}
+            onCheckedChange={(checked) => setRiverParams({ createLandBridge: checked })}
             disabled={disabled}
           />
         </div>
