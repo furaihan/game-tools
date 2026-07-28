@@ -3,7 +3,7 @@ import { type SandboxOption, getDisplayName, getDescription } from '@/features/s
 import { OptionControl } from './OptionControl'
 import { Badge } from '@/shared/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
-import { HelpCircle } from 'lucide-react'
+import { HelpCircleIcon } from 'lucide-react'
 
 interface OptionRowProps {
   option: SandboxOption
@@ -29,7 +29,7 @@ function OptionRowImpl({ option, currentValueIndex, isDisabled, isReadOnly }: Op
           {description && (
             <Tooltip>
               <TooltipTrigger className="cursor-help text-muted-foreground hover:text-foreground transition-colors">
-                <HelpCircle className="size-3.5" />
+                <HelpCircleIcon className="size-3.5" />
               </TooltipTrigger>
               <TooltipContent side="top" align="center" className="max-w-sm whitespace-pre-line">
                 {description}

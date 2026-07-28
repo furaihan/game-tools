@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, type ReactNode } from 'react'
 import type { BiomeDef, BiomeMap, AlgorithmName, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
+import type { WaterMap } from '@/features/river-generator/types/river-generator'
 
 interface BiomeGeneratorState {
   biomes: BiomeDef[]
@@ -12,6 +13,16 @@ interface BiomeGeneratorState {
   isFiltered: boolean
   error: string | null
   generationStatus: GenerationStatus | null
+  waterMap: WaterMap | null
+  waterColor: string
+  isGeneratingRivers: boolean
+  riverParams: {
+    branchCount: number
+    mainStemWidth: number
+    branchWidth: number
+    roughness: number
+  }
+  riverGenerationStatus: GenerationStatus | null
 }
 
 interface BiomeGeneratorActions {
@@ -27,6 +38,10 @@ interface BiomeGeneratorActions {
   exportPNG: () => void
   copySeed: () => void
   resetToDefaults: () => void
+  setWaterColor: (color: string) => void
+  setRiverParams: (params: Partial<{ branchCount: number; mainStemWidth: number; branchWidth: number; roughness: number }>) => void
+  generateRivers: () => void
+  clearRivers: () => void
 }
 
 type BiomeGeneratorContextValue = BiomeGeneratorState & BiomeGeneratorActions
@@ -84,8 +99,11 @@ export const DEFAULT_RESOLUTION = 1024
 export const DEFAULT_ALGORITHM: AlgorithmName = "Probability Fields"
 
 const BiomeGeneratorContext = createContext<BiomeGeneratorContextValue | null>(null)
+BiomeGeneratorContext.displayName = 'BiomeGeneratorContext'
+const contextUid = Math.random().toString(36).slice(2, 8)
 
 export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
+  console.log(`[${contextUid}] BiomeGeneratorProvider rendering`)
   const [biomes, setBiomes] = useState<BiomeDef[]>(() =>
     DEFAULT_BIOMES.map(b => ({ ...b }))
   )
@@ -98,14 +116,27 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
   const [isFiltered, setIsFiltered] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [generationStatus, setGenerationStatus] = useState<GenerationStatus | null>(null)
+  const [waterMap, setWaterMap] = useState<WaterMap | null>(null)
+  const [waterColor, setWaterColor] = useState('#001234')
+  const [isGeneratingRivers, setIsGeneratingRivers] = useState(false)
+  const [riverParams, setRiverParamsState] = useState({
+    branchCount: 4,
+    mainStemWidth: 8,
+    branchWidth: 4,
+    roughness: 0.4,
+  })
+  const [riverGenerationStatus, setRiverGenerationStatus] = useState<GenerationStatus | null>(null)
+  const [riverNonce, setRiverNonce] = useState(0)
 
   const workerRef = useRef<Worker | null>(null)
   const filterWorkerRef = useRef<Worker | null>(null)
+  const riverWorkerRef = useRef<Worker | null>(null)
 
   useEffect(() => {
     return () => {
       workerRef.current?.terminate()
       filterWorkerRef.current?.terminate()
+      riverWorkerRef.current?.terminate()
     }
   }, [])
 
@@ -128,6 +159,9 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setBiomeMap(null)
     setIsFiltered(false)
     setError(null)
+    setWaterMap(null)
+    setWaterColor('#001234')
+    setRiverParamsState({ branchCount: 4, mainStemWidth: 8, branchWidth: 4, roughness: 0.4 })
   }, [])
 
   const runGeneration = useCallback((seedToUse: number) => {
@@ -139,6 +173,10 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setIsGenerating(true)
     setIsFiltered(false)
     setGenerationStatus({ phase: "Starting…", progress: 0 })
+    setWaterMap(null)
+
+    riverWorkerRef.current?.terminate()
+    filterWorkerRef.current?.terminate()
 
     if (workerRef.current) {
       workerRef.current.terminate()
@@ -243,10 +281,16 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
         : { r: 0, g: 0, b: 0 }
     }
     const rgbCache = biomes.map(b => hexToRgb(b.color))
+    const waterRgb = hexToRgb(waterColor)
 
     for (let i = 0; i < biomeMap.data.length; i++) {
-      const biomeIdx = biomeMap.data[i]
-      const color = rgbCache[biomeIdx] || { r: 0, g: 0, b: 0 }
+      let color
+      if (waterMap && waterMap.data[i] === 1) {
+        color = waterRgb
+      } else {
+        const biomeIdx = biomeMap.data[i]
+        color = rgbCache[biomeIdx] || { r: 0, g: 0, b: 0 }
+      }
       const idx = i * 4
       imageData.data[idx] = color.r
       imageData.data[idx + 1] = color.g
@@ -261,11 +305,74 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     link.download = `biome_${seed}_${safeAlgo}_${resolution}.png`
     link.href = canvas.toDataURL("image/png")
     link.click()
-  }, [biomeMap, biomes, seed, algorithm, resolution])
+  }, [biomeMap, biomes, seed, algorithm, resolution, waterMap, waterColor])
 
   const copySeed = useCallback(() => {
     navigator.clipboard.writeText(seed.toString())
   }, [seed])
+
+  const setRiverParams = useCallback((params: Partial<typeof riverParams>) => {
+    setRiverParamsState(prev => ({ ...prev, ...params }))
+  }, [])
+
+  const generateRivers = useCallback(() => {
+    if (!biomeMap) return
+
+    setError(null)
+    setIsGeneratingRivers(true)
+    setRiverGenerationStatus({ phase: 'Starting…', progress: 0 })
+
+    if (riverWorkerRef.current) {
+      riverWorkerRef.current.terminate()
+    }
+
+    riverWorkerRef.current = new Worker(
+      new URL('../../river-generator/workers/river-generator.worker.ts', import.meta.url),
+      { type: 'module' },
+    )
+
+    riverWorkerRef.current.onmessage = (e) => {
+      switch (e.data.type) {
+        case 'status':
+          setRiverGenerationStatus(e.data.status)
+          break
+        case 'success':
+          setWaterMap(e.data.data)
+          setIsGeneratingRivers(false)
+          setRiverGenerationStatus(null)
+          break
+        case 'error':
+          setError(e.data.error || 'River generation failed')
+          setIsGeneratingRivers(false)
+          setRiverGenerationStatus(null)
+          break
+      }
+    }
+
+    riverWorkerRef.current.onerror = (err) => {
+      setError(err.message || 'River worker error')
+      setIsGeneratingRivers(false)
+      setRiverGenerationStatus(null)
+    }
+
+    const nonce = riverNonce
+    setRiverNonce(prev => prev + 1)
+
+    riverWorkerRef.current.postMessage({
+      width: biomeMap.width,
+      height: biomeMap.height,
+      seed: biomeMap.seed + nonce,
+      branchCount: riverParams.branchCount,
+      mainStemWidth: riverParams.mainStemWidth,
+      branchWidth: riverParams.branchWidth,
+      roughness: riverParams.roughness,
+    })
+  }, [biomeMap, riverParams, riverNonce])
+
+  const clearRivers = useCallback(() => {
+    setWaterMap(null)
+    setRiverGenerationStatus(null)
+  }, [])
 
   return (
     <BiomeGeneratorContext.Provider
@@ -281,6 +388,9 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
         generate, randomizeAndGenerate,
         applyMajorityFilter, exportPNG, copySeed,
         resetToDefaults,
+        waterMap, waterColor, setWaterColor,
+        isGeneratingRivers, riverParams, setRiverParams,
+        riverGenerationStatus, generateRivers, clearRivers,
       }}
 
     >
@@ -291,6 +401,9 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
 
 export function useBiomeGenerator() {
   const ctx = useContext(BiomeGeneratorContext)
-  if (!ctx) throw new Error("useBiomeGenerator must be used within BiomeGeneratorProvider")
+  if (!ctx) {
+    console.warn(`[${contextUid}] useBiomeGenerator: context is null — provider may not be rendered or module duplicated`)
+    throw new Error("useBiomeGenerator must be used within BiomeGeneratorProvider")
+  }
   return ctx
 }

@@ -94,25 +94,123 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-family:
+      "Inter",
+      system-ui,
+      -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
 
-@layer utilities {
-  .scrollbar-thin::-webkit-scrollbar {
+/* Keyframes stay top-level, bukan bagian dari utility */
+@keyframes contour-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-140px, -140px, 0);
+  }
+}
+@keyframes shimmer-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes error-drop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  70% {
+    transform: translateX(-3px);
+  }
+  82% {
+    transform: translateX(3px);
+  }
+  92% {
+    transform: translateX(-1px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes dice-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@utility scrollbar-thin {
+  &::-webkit-scrollbar {
     width: 4px;
     height: 4px;
   }
-  .scrollbar-thin::-webkit-scrollbar-track {
+  &::-webkit-scrollbar-track {
     background: transparent;
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: oklch(0.18 0.005 0);
+  &::-webkit-scrollbar-thumb {
+    background: var(--muted-foreground);
     border-radius: 2px;
   }
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.68 0.005 0);
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--foreground);
   }
+}
+
+@utility animate-contour-drift {
+  animation: contour-drift 90s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility animate-shimmer {
+  animation: shimmer-sweep 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility animate-fade-slide {
+  animation: fade-slide-in 0.3s ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility animate-error-in {
+  animation: error-drop-in 0.45s ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility animate-dice-spin {
+  animation: dice-spin 400ms ease-out;
 }

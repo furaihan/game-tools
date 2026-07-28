@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Textarea } from '@/shared/ui/textarea'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
-import { AlertCircle, Settings2 } from 'lucide-react'
+import { AlertCircleIcon, Settings2Icon } from 'lucide-react'
 import { OptionRow } from './OptionRow'
 import { useSandboxActions, useSandboxUI, useSandboxValues, useSandboxDerived } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
@@ -31,7 +31,7 @@ export function DecodePanel() {
               Decode Code
             </Button>
             <Button variant="secondary" onClick={() => setActiveTab('encode')} className="w-full sm:w-auto">
-              <Settings2 className="w-4 h-4 mr-2" />
+              <Settings2Icon className="w-4 h-4 mr-2" />
               Edit Options
             </Button>
           </div>
@@ -42,7 +42,7 @@ export function DecodePanel() {
         <div className="space-y-2">
           {decodeWarnings.map((warn, i) => (
             <Alert variant="destructive" key={i}>
-              <AlertCircle className="h-4 w-4" />
+              <AlertCircleIcon className="h-4 w-4" />
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>{warn}</AlertDescription>
             </Alert>

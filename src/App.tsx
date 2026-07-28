@@ -1,7 +1,12 @@
 import { Outlet, Link, useLocation } from "@tanstack/react-router";
-import { TooltipProvider } from "@/shared/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/shared/ui/tooltip";
 import { Button } from "@/shared/ui/button";
-import { Moon, Sun, Gamepad2, ChevronDown } from "lucide-react";
+import { MoonIcon, SunIcon, Gamepad2Icon, ChevronDownIcon } from "lucide-react";
 import { ThemeProvider, useTheme } from "@/app/theme/theme-context";
 import { tools } from "@/shared/tool-registry/tool-list";
 import {
@@ -10,19 +15,26 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/shared/ui/dropdown-menu";
+import { Label } from "./shared/ui/label";
 
 function ThemeToggle() {
   const { isDark, toggle } = useTheme();
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggle}
-      className="h-8 w-8 text-muted-foreground hover:text-foreground"
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-    >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggle}
+          className="h-8 w-8 text-muted-foreground hover:text-foreground animate-pulse"
+        >
+          {isDark ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        {"Switch to " + (isDark ? "light" : "dark") + " mode"}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -44,7 +56,7 @@ export default function App() {
           <header className="flex h-14 items-center justify-between border-b bg-background px-4">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <Gamepad2 className="h-5 w-5 text-primary" />
+                <Gamepad2Icon className="h-5 w-5 text-primary" />
                 <h1 className="text-sm font-semibold tracking-tight">
                   Game Tools
                 </h1>
@@ -67,9 +79,11 @@ export default function App() {
                   tools.reduce<Record<string, typeof tools>>((acc, tool) => {
                     (acc[tool.gameCategory] ??= []).push(tool);
                     return acc;
-                  }, {})
+                  }, {}),
                 ).map(([category, categoryTools]) => {
-                  const isActive = categoryTools.some((t) => location.pathname === t.href)
+                  const isActive = categoryTools.some(
+                    (t) => location.pathname === t.href,
+                  );
                   return (
                     <DropdownMenu key={category}>
                       <DropdownMenuTrigger
@@ -83,7 +97,7 @@ export default function App() {
                         }`}
                       >
                         {category}
-                        <ChevronDown className="h-4 w-4" />
+                        <ChevronDownIcon className="h-4 w-4" />
                         {isActive && (
                           <span className="absolute -bottom-px inset-x-3 h-0.5 rounded-sm bg-primary" />
                         )}
@@ -95,7 +109,11 @@ export default function App() {
                             <DropdownMenuItem
                               key={tool.href}
                               render={<Link to={tool.href} />}
-                              className={location.pathname === tool.href ? "border-l-2 border-primary pl-1 text-foreground font-medium" : ""}
+                              className={
+                                location.pathname === tool.href
+                                  ? "border-l-2 border-primary pl-1 text-foreground font-medium"
+                                  : ""
+                              }
                             >
                               <Icon className="h-4 w-4" />
                               {tool.title}
@@ -104,7 +122,7 @@ export default function App() {
                         })}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  )
+                  );
                 })}
               </nav>
             </div>
@@ -114,8 +132,7 @@ export default function App() {
             <Outlet />
           </main>
           <footer className="flex py-2 items-center justify-end border-t bg-background px-4 text-xs text-muted-foreground">
-            &#10004; Deployed at:{" "}
-            {formattedDate}
+            &#10004; Deployed at: {formattedDate}
           </footer>
         </div>
       </TooltipProvider>

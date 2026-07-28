@@ -1,5 +1,6 @@
 import type { BiomeMap } from '../types/biome-generator'
 import { majorityFilter } from '../core/cleanup'
+import { getErrorMessage } from '@/shared/utils/utils'
 
 self.onmessage = (e: MessageEvent<{ biomeMap: BiomeMap; radius: number }>) => {
   const { biomeMap, radius } = e.data
@@ -15,7 +16,7 @@ self.onmessage = (e: MessageEvent<{ biomeMap: BiomeMap; radius: number }>) => {
       type: 'success',
       data: { width, height, seed, data: nextData },
     })
-  } catch (err: any) {
-    self.postMessage({ type: 'error', error: err.message })
+  } catch (err: unknown) {
+    self.postMessage({ type: 'error', error: getErrorMessage(err) })
   }
 }

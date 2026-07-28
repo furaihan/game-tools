@@ -1,7 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Button } from '@/shared/ui/button'
 import { Toaster } from '@/shared/ui/sonner'
-import { Shuffle, RefreshCw, Code2, Settings2 } from 'lucide-react'
+import { ShuffleIcon, RefreshCwIcon, Code2Icon, Settings2Icon } from 'lucide-react'
 import { LiveCodeCard } from './LiveCodeCard'
 import { SearchBar } from './SearchBar'
 import { DecodePanel } from './DecodePanel'
@@ -49,11 +49,11 @@ function SandboxCodecView() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={handleRandomizeAll} size="sm">
-              <Shuffle className="w-4 h-4 mr-2" />
+              <ShuffleIcon className="w-4 h-4 mr-2" />
               Randomize
             </Button>
             <Button variant="outline" onClick={resetAll} size="sm">
-              <RefreshCw className="w-4 h-4 mr-2" />
+              <RefreshCwIcon className="w-4 h-4 mr-2" />
               Reset All
             </Button>
           </div>
@@ -65,11 +65,11 @@ function SandboxCodecView() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="decode">
-              <Code2 className="w-4 h-4 mr-2" />
+              <Code2Icon className="w-4 h-4 mr-2" />
               Decode Mode
             </TabsTrigger>
             <TabsTrigger value="encode">
-              <Settings2 className="w-4 h-4 mr-2" />
+              <Settings2Icon className="w-4 h-4 mr-2" />
               Encode / Edit All
             </TabsTrigger>
           </TabsList>

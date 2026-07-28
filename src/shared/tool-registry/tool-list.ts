@@ -1,7 +1,7 @@
 import type { FileRouteTypes } from '@/routeTree.gen'
 
 type RoutePaths = FileRouteTypes['to']
-import { Map, LayoutGrid, Code2 } from 'lucide-react'
+import { MapIcon, LayoutGridIcon, Code2Icon } from 'lucide-react'
 
 export type GameCategory = '7 Days to Die' | 'Minecraft' | 'Other'
 
@@ -19,13 +19,13 @@ export const tools: Tool[] = [
     description: 'Generate biome layouts for 7 Days to Die',
     href: '/7dtd/biome-layout-generator',
     gameCategory: '7 Days to Die',
-    icon: LayoutGrid
+    icon: LayoutGridIcon
   },
   {
     title: 'Sandbox Codec',
     description: 'Encode and decode sandbox data for 7 Days to Die',
     href: '/7dtd/sandbox-codec',
     gameCategory: '7 Days to Die',
-    icon: Code2
+    icon: Code2Icon
   }
 ];

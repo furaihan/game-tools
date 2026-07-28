@@ -12,6 +12,15 @@ A highly configurable procedural generation engine that allows creators to insta
 * **Multithreaded Processing**: Offloads heavy noise calculations and median filtering to Web Workers so the UI never drops a frame.
 * **Smart Presets**: Out-of-the-box configurations for 7 Days to Die (5 biomes), Minecraft (7 biomes), Valheim (9 biomes), and Standard Earth (9 biomes).
 
+### River Generator (Feature Module)
+
+A shared procedural river generation engine integrated into the Biome Layout Generator for 7 Days to Die maps, based on a fractal midpoint displacement algorithm with Perlin noise width variation.
+
+* **Midpoint Displacement Algorithm**: Recursive fractal subdivision that produces self-similar meandering river centerlines with natural-looking bends across all scales.
+* **Disk Stamp Rasterization**: River paths are rasterized by stamping overlapping disks with Perlin noise width variation, producing smooth, continuous water channels.
+* **Configurable Parameters**: Tune river density, meander factor, width, and noise characteristics per generation.
+* **Shared Feature Architecture**: Operates as a cross-tool feature module. Core logic lives in `src/features/river-generator/core/` with zero React dependencies, consumed directly by the Biome Layout Generator's `GeneratorControls` component.
+
 ### Sandbox Codec (`/7dtd/sandbox-codec`)
 An interactive encoder and decoder for the V3.0 Sandbox Server Preset Codes introduced in 7 Days to Die.
 
@@ -23,27 +32,45 @@ An interactive encoder and decoder for the V3.0 Sandbox Server Preset Codes intr
 
 ## Architecture Overview
 
-The app is built as a single-page application (SPA) with tool-scoped state management to ensure high modularity and zero coupling between different tool routes.
+The app is built as a single-page application (SPA) with tool-scoped state management to ensure high modularity and zero coupling between different tool routes. All feature modules depend only on the shared infrastructure layer — never on each other.
 
 ```mermaid
 graph TD
-    subgraph Client [Browser Client]
-        App[Vite + React 19 App] --> Router[TanStack Router]
-        Router --> Dash[Dashboard /]
-        Router --> LayoutGen[Biome Layout Generator]
-        Router --> Codec[Sandbox Codec]
-
-        subgraph Biome Layout Generator Tool
-            LayoutGen --> UI_Gen[UI Controls & Canvas Preview]
-            UI_Gen --> Worker_Gen[Web Workers: biome-generator & filter]
-            Worker_Gen -->|Transferable Buffers| UI_Gen
-        end
-
-        subgraph Sandbox Codec Tool
-            Codec --> UI_Codec[UI panels: Encode & Decode]
-            UI_Codec --> Codec_Lib[Codec Library: encode, decode, dependencies]
-        end
+    subgraph Client ["Browser Client"]
+        App["Vite + React 19 App"] --> Router["TanStack Router"]
+        Router --> Dash["Dashboard /"]
+        Router --> BG["Biome Layout Generator"]
+        Router --> RG["River Generator"]
+        Router --> SC["Sandbox Codec"]
     end
+
+    subgraph Service ["Feature Modules"]
+        direction LR
+        BG_impl["biome-generator"]
+        RG_impl["river-generator"]
+        SC_impl["sandbox-codec"]
+    end
+
+    subgraph Shared ["Shared Layer (Infrastructure & Design System)"]
+        direction TB
+        UI["shared/ui — shadcn components"]
+        Canvas["shared/canvas — ImageData utilities"]
+        Utils["shared/utils — cn(), etc."]
+        Registry["shared/tool-registry — tool-list.ts"]
+    end
+
+    BG --> BG_impl
+    RG --> RG_impl
+    SC --> SC_impl
+
+    BG_impl --> UI
+    BG_impl --> Canvas
+    BG_impl --> Utils
+
+    RG_impl --> UI
+    RG_impl --> Utils
+
+    SC_impl --> UI
 ```
 
 ### Project Structure
@@ -57,6 +84,11 @@ src/
       core/                         — Pure generation algorithms (no React deps)
       workers/                      — Web Workers for offloaded generation
       types/                        — Tool-specific TypeScript types
+    river-generator/                — River Generator (Shared Feature)
+      components/                   — RiverControls UI component
+      core/                         — Walker, noise, stamp algorithms (no React deps)
+      workers/                      — Web Worker for offloaded river generation
+      types/                        — WaterMap, RiverGenParams types
     sandbox-codec/                  — Sandbox Codec
       components/                   — UI components (Panels, Controls)
       core/                         — Encode/decode library (no React deps)
@@ -80,9 +112,10 @@ src/
 
 ### Architecture Principles
 
-- **Feature-first**: Each tool is fully self-contained under `features/<tool-name>/` with its own components, context, core logic, workers, and types.
+- **Feature-first, decoupled**: Each tool is fully self-contained under `features/<tool-name>/` with its own components, context, core logic, workers, and types. Feature modules never import from each other — all dependencies flow to `shared/`.
+- **Shared feature modules**: Capabilities shared across tools (e.g., `river-generator`) live in `features/<shared-feature>/` and expose `core/` and `types/` for cross-feature imports — never a circular dependency.
 - **One-way dependency**: Features import from `shared/`, never the reverse. Core logic (`features/*/core/`) is pure TypeScript with zero React or UI dependencies.
-- **Shared baseline**: Cross-cutting concerns (shadcn/ui components, hooks, utils) live in `shared/` and are used by all features.
+- **Shared baseline**: Cross-cutting concerns (shadcn/ui components, hooks, utils, canvas utilities) live in `shared/` and are consumed by all feature modules.
 
 ## Tech Stack
 
@@ -114,9 +147,11 @@ bun run dev
 
 This project is built to expand to other games and features easily. To add a new tool:
 
-1. Create a route page at `src/routes/<game>/<tool-name>/index.tsx`.
+0. **Check for shared features**: Before scaffolding a new module, browse `src/features/` for existing shared capabilities (e.g., `river-generator`). Compose them into your tool rather than reimplementing.
+1. Create a route page at `src/routes/<game>/<tool-name>/index.tsx`. The TanStack Router plugin auto-registers the route on dev/build.
 2. Create a feature folder at `src/features/<tool-name>/` with subdirectories: `components/`, `core/`, `hooks/`, `context/`, `types/` (add only what you need).
 3. Core logic goes in `features/<tool-name>/core/` — pure TypeScript, no React dependencies.
 4. Track tool-specific state inside its own Context provider in `features/<tool-name>/context/` or local page state (avoid global variables).
-5. Register the route link in `src/App.tsx` (sidebar) and `src/routes/index.tsx` (dashboard grid).
-6. Import shadcn components from `@/shared/ui/` and shared utilities from `@/shared/`.
+5. Register the tool in `src/shared/tool-registry/tool-list.ts` — its entry (title, href, gameCategory, icon) automatically populates both the sidebar nav and the home page card grid.
+6. If your tool reuses an existing shared feature (like `river-generator`), import its core types and logic directly from `@/features/<shared-feature>/core/` — no need to duplicate.
+7. Import shadcn components from `@/shared/ui/` and shared utilities from `@/shared/`.
