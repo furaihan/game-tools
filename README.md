@@ -14,10 +14,10 @@ A highly configurable procedural generation engine that allows creators to insta
 
 ### River Generator (Feature Module)
 
-A shared procedural river generation engine integrated into the Biome Layout Generator for 7 Days to Die maps, based on a stochastic river-walker algorithm with stamp-based terrain blending.
+A shared procedural river generation engine integrated into the Biome Layout Generator for 7 Days to Die maps, based on a fractal midpoint displacement algorithm with Perlin noise width variation.
 
-* **River-Walker Algorithm**: Agent-based stochastic walking to produce natural, meandering river paths across the terrain map, using noise functions for organic variation.
-* **Stamp-Based Terrain Blending**: River paths are stamped directly onto the biome map, blending terrain heights and biome IDs at river boundaries for seamless integration.
+* **Midpoint Displacement Algorithm**: Recursive fractal subdivision that produces self-similar meandering river centerlines with natural-looking bends across all scales.
+* **Disk Stamp Rasterization**: River paths are rasterized by stamping overlapping disks with Perlin noise width variation, producing smooth, continuous water channels.
 * **Configurable Parameters**: Tune river density, meander factor, width, and noise characteristics per generation.
 * **Shared Feature Architecture**: Operates as a cross-tool feature module. Core logic lives in `src/features/river-generator/core/` with zero React dependencies, consumed directly by the Biome Layout Generator's `GeneratorControls` component.
 

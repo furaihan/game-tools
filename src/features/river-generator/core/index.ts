@@ -1,4 +1,4 @@
-export { generateRiversCore } from './river-walker'
+export { generateRiversCore } from './river-generator'
 export { createNoise2D } from './noise'
 export { stampCircle, strokeLineTapered } from './stamp'
-export { applyLandBridges } from './land-bridge'
+

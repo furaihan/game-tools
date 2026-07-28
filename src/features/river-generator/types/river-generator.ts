@@ -14,8 +14,7 @@ export interface RiverGenParams {
   branchCount: number
   mainStemWidth: number
   branchWidth: number
-  noiseScale: number
-  createLandBridge: boolean
+  roughness: number
 }
 
 export type RiverGenStatus = GenerationStatus

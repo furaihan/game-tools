@@ -41,10 +41,41 @@ export function strokeLineTapered(
     stampCircle(data, width, height, points[0][0], points[0][1], endRadius, value)
     return
   }
-  for (let i = 0; i < len; i++) {
-    const t = i / (len - 1)
-    const r = startRadius + (endRadius - startRadius) * t
-    const [px, py] = points[i]
-    stampCircle(data, width, height, px, py, r, value)
+
+  const segmentLengths: number[] = []
+  let totalLen = 0
+  for (let i = 0; i < len - 1; i++) {
+    const dx = points[i + 1][0] - points[i][0]
+    const dy = points[i + 1][1] - points[i][1]
+    const segLen = Math.hypot(dx, dy)
+    segmentLengths.push(segLen)
+    totalLen += segLen
+  }
+
+  if (totalLen < 0.001) {
+    stampCircle(data, width, height, points[0][0], points[0][1], endRadius, value)
+    return
+  }
+
+  let cursor = 0
+  for (let i = 0; i < len - 1; i++) {
+    const [x0, y0] = points[i]
+    const [x1, y1] = points[i + 1]
+    const segLen = segmentLengths[i]
+    const r0 = startRadius + (endRadius - startRadius) * (cursor / totalLen)
+    const r1 = startRadius + (endRadius - startRadius) * ((cursor + segLen) / totalLen)
+    const avgR = (r0 + r1) / 2
+    const step = Math.max(0.5, avgR * 0.5)
+    const steps = Math.max(1, Math.ceil(segLen / step))
+
+    for (let j = 0; j <= steps; j++) {
+      const t = j / steps
+      const px = x0 + (x1 - x0) * t
+      const py = y0 + (y1 - y0) * t
+      const r = r0 + (r1 - r0) * t
+      stampCircle(data, width, height, px, py, r, value)
+    }
+
+    cursor += segLen
   }
 }

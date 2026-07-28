@@ -20,8 +20,7 @@ interface BiomeGeneratorState {
     branchCount: number
     mainStemWidth: number
     branchWidth: number
-    noiseScale: number
-    createLandBridge: boolean
+    roughness: number
   }
   riverGenerationStatus: GenerationStatus | null
 }
@@ -40,7 +39,7 @@ interface BiomeGeneratorActions {
   copySeed: () => void
   resetToDefaults: () => void
   setWaterColor: (color: string) => void
-  setRiverParams: (params: Partial<{ branchCount: number; mainStemWidth: number; branchWidth: number; noiseScale: number; createLandBridge: boolean }>) => void
+  setRiverParams: (params: Partial<{ branchCount: number; mainStemWidth: number; branchWidth: number; roughness: number }>) => void
   generateRivers: () => void
   clearRivers: () => void
 }
@@ -124,8 +123,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     branchCount: 4,
     mainStemWidth: 8,
     branchWidth: 4,
-    noiseScale: 150,
-    createLandBridge: false,
+    roughness: 0.4,
   })
   const [riverGenerationStatus, setRiverGenerationStatus] = useState<GenerationStatus | null>(null)
   const [riverNonce, setRiverNonce] = useState(0)
@@ -163,7 +161,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setError(null)
     setWaterMap(null)
     setWaterColor('#001234')
-    setRiverParamsState({ branchCount: 4, mainStemWidth: 8, branchWidth: 4, noiseScale: 150, createLandBridge: false })
+    setRiverParamsState({ branchCount: 4, mainStemWidth: 8, branchWidth: 4, roughness: 0.4 })
   }, [])
 
   const runGeneration = useCallback((seedToUse: number) => {
@@ -367,8 +365,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
       branchCount: riverParams.branchCount,
       mainStemWidth: riverParams.mainStemWidth,
       branchWidth: riverParams.branchWidth,
-      noiseScale: riverParams.noiseScale,
-      createLandBridge: riverParams.createLandBridge,
+      roughness: riverParams.roughness,
     })
   }, [biomeMap, riverParams, riverNonce])
 

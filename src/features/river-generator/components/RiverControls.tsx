@@ -3,7 +3,6 @@ import { useBiomeGenerator } from '@/features/biome-generator/context/biome-gene
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
-import { Switch } from '@/shared/ui/switch'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui/tooltip'
 import { DropletsIcon, XIcon } from 'lucide-react'
 
@@ -77,23 +76,15 @@ export function RiverControls() {
         </div>
 
         <div className="space-y-2">
-          <Label className="text-[10px] text-muted-foreground">Curvature Scale (px)</Label>
+          <Label className="text-[10px] text-muted-foreground">Roughness</Label>
           <Input
             type="number"
-            min={50}
-            max={500}
-            value={riverParams.noiseScale}
-            onChange={(e) => setRiverParams({ noiseScale: Math.max(50, Math.min(500, parseInt(e.target.value) || 150)) })}
+            min={0.05}
+            max={1}
+            step={0.05}
+            value={riverParams.roughness}
+            onChange={(e) => setRiverParams({ roughness: Math.max(0.05, Math.min(1, parseFloat(e.target.value) || 0.4)) })}
             className="font-mono text-sm"
-            disabled={disabled}
-          />
-        </div>
-
-        <div className="flex items-center justify-between py-1">
-          <Label className="text-[10px] text-muted-foreground">Create Land Bridge</Label>
-          <Switch
-            checked={riverParams.createLandBridge}
-            onCheckedChange={(checked) => setRiverParams({ createLandBridge: checked })}
             disabled={disabled}
           />
         </div>
