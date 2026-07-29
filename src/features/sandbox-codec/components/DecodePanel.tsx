@@ -1,15 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Textarea } from '@/shared/ui/textarea'
 import { Button } from '@/shared/ui/button'
-import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
-import { AlertCircleIcon, Settings2Icon } from 'lucide-react'
+import { Settings2Icon } from 'lucide-react'
 import { OptionRow } from './OptionRow'
 import { useSandboxActions, useSandboxUI, useSandboxValues, useSandboxDerived } from '@/features/sandbox-codec/context/SandboxCodecContext'
+import { getDefaultIndex } from '@/features/sandbox-codec/core/sandbox-option-registry'
 
 export function DecodePanel() {
   const { setDecodeInput, handleDecode, setActiveTab } = useSandboxActions()
-  const { decodeInput, decodeWarnings } = useSandboxUI()
-  const { values, disabledOptionIds } = useSandboxValues()
+  const { decodeInput } = useSandboxUI()
+  const { state, disabledOptionIds } = useSandboxValues()
   const { filteredChangedGroups, changedOptions } = useSandboxDerived()
 
   return (
@@ -38,18 +38,6 @@ export function DecodePanel() {
         </CardContent>
       </Card>
 
-      {decodeWarnings.length > 0 && (
-        <div className="space-y-2">
-          {decodeWarnings.map((warn, i) => (
-            <Alert variant="destructive" key={i}>
-              <AlertCircleIcon className="h-4 w-4" />
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>{warn}</AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
-
       {Object.keys(filteredChangedGroups).length > 0 ? (
         <div className="space-y-6">
           <h3 className="text-lg font-semibold border-b pb-2">Decoded Options</h3>
@@ -57,12 +45,12 @@ export function DecodePanel() {
             <div key={cat} className="space-y-3">
               <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">{cat}</h4>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                {opts.map((opt) => (
+                {opts.map((def) => (
                   <OptionRow
-                    key={opt.id}
-                    option={opt}
-                    currentValueIndex={values[opt.id] ?? opt.defaultValueIndex}
-                    isDisabled={disabledOptionIds.has(opt.id)}
+                    key={def.option}
+                    option={def}
+                    currentValueIndex={state.get(def.option)?.currentIndex ?? getDefaultIndex(def)}
+                    isDisabled={disabledOptionIds.has(def.option)}
                     isReadOnly
                   />
                 ))}

@@ -1,32 +1,42 @@
 import { createContext, use, useState, useMemo, useCallback, useEffect, useRef, type ReactNode } from 'react'
-import { decodeSandboxCode, encodeSandboxCode, getDisabledOptionIds } from '@/features/sandbox-codec/core/codec'
-import { sandboxOptions, optionsById, getDisplayName } from '@/features/sandbox-codec/core/sandboxOptions'
-import type { SandboxOption } from '@/features/sandbox-codec/core/sandboxOptions'
-import { valueSets } from '@/features/sandbox-codec/core/valueSets'
+import { SandboxOption } from '@/features/sandbox-codec/core/sandbox-option.enum'
+import type { SandboxOptionDefinition, SandboxOptionState } from '@/features/sandbox-codec/core/sandbox-option-definition.types'
+import { SANDBOX_OPTION_DEFINITIONS } from '@/features/sandbox-codec/core/sandbox-option-definitions.data'
+import { optionsByCategory, getDefinition, getValueSet, getDefaultIndex, createDefaultState } from '@/features/sandbox-codec/core/sandbox-option-registry'
+import { encodePresetToCode, decodeCodeToPreset } from '@/features/sandbox-codec/core/sandbox-option-codec'
+import { getDisplayName, getEnumName } from '@/features/sandbox-codec/core/localization'
 import { toast } from 'sonner'
 
-const defaultValues = sandboxOptions.reduce((acc, opt) => {
-  acc[opt.id] = opt.defaultValueIndex
-  return acc
-}, {} as Record<number, number>)
+function applyCascade(
+  state: Map<SandboxOption, SandboxOptionState>,
+  option: SandboxOption,
+  newIndex: number,
+): void {
+  const definition = getDefinition(option)
+  const disabled = definition?.disabledOptions
+  if (!disabled) return
 
-function getValueSetLength(option: SandboxOption): number {
-  const vs = valueSets[option.valueSetName]
-  if (!vs) return 0
-  return (vs.floatValues ?? vs.intValues ?? vs.boolValues ?? []).length
+  const valueSet = definition ? getValueSet(definition) : undefined
+  const newValue = valueSet?.values[newIndex]
+
+  const matches = disabled.inverted ? newValue === disabled.value : newValue !== disabled.value
+
+  for (const target of disabled.disabledOptions) {
+    const targetState = state.get(target)
+    if (!targetState) continue
+    state.set(target, { ...targetState, isEnabled: matches })
+  }
 }
 
 /* ------------------------------------------------------------------ *
  * Contexts are split by "how often they change" / "who needs them", so
  * a component that only needs e.g. actions never re-renders when
- * `values` changes, and vice-versa. Each slice gets its own
+ * `state` changes, and vice-versa. Each slice gets its own
  * useMemo'd value so updating one can't invalidate another.
  * ------------------------------------------------------------------ */
 
-// Stable across (almost) every render — safe for any component to
-// consume without incurring re-renders when unrelated state changes.
 interface SandboxActionsContextValue {
-  setValue: (optionId: number, valueIndex: number) => void
+  setValue: (option: SandboxOption, valueIndex: number) => void
   setDecodeInput: (value: string) => void
   setSearchQuery: (value: string) => void
   setActiveTab: (value: string) => void
@@ -36,29 +46,23 @@ interface SandboxActionsContextValue {
   copyToClipboard: (text: string) => void
 }
 
-// Changes on every single option edit — the "hot" data. Keep this as
-// rarely-consumed-directly as possible (per-row components should get
-// their own single value as a prop instead, see EncodePanel/DecodePanel).
 interface SandboxValuesContextValue {
-  values: Record<number, number>
-  disabledOptionIds: Set<number>
+  state: Map<SandboxOption, SandboxOptionState>
+  disabledOptionIds: Set<SandboxOption>
 }
 
-// Changes on decode/search/tab interactions.
 interface SandboxUIContextValue {
   decodeInput: string
-  decodeWarnings: string[]
   searchQuery: string
   activeTab: string
   currentCode: string
 }
 
-// Recomputed whenever values or searchQuery change.
 interface SandboxDerivedContextValue {
-  groupedOptions: Record<string, SandboxOption[]>
-  changedOptions: SandboxOption[]
-  filteredGroups: Record<string, SandboxOption[]>
-  filteredChangedGroups: Record<string, SandboxOption[]>
+  groupedOptions: Record<string, SandboxOptionDefinition[]>
+  changedOptions: SandboxOptionDefinition[]
+  filteredGroups: Record<string, SandboxOptionDefinition[]>
+  filteredChangedGroups: Record<string, SandboxOptionDefinition[]>
 }
 
 const SandboxActionsContext = createContext<SandboxActionsContextValue | null>(null)
@@ -68,36 +72,55 @@ const SandboxDerivedContext = createContext<SandboxDerivedContextValue | null>(n
 
 interface SandboxCodecProviderProps {
   urlCode?: string
-  // URL-syncing is the route's job, not this context's — see routes/7dtd/sandbox-codec/index.tsx
   onCodeChange?: (code: string | undefined) => void
   children: ReactNode
 }
 
 export function SandboxCodecProvider({ urlCode, onCodeChange, children }: SandboxCodecProviderProps) {
-  const [values, setValues] = useState<Record<number, number>>(defaultValues)
+  const [state, setState] = useState(() => createDefaultState())
   const [decodeInput, setDecodeInput] = useState('')
-  const [decodeWarnings, setDecodeWarnings] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('decode')
 
-  const currentCode = useMemo(() => encodeSandboxCode(values), [values])
-  const disabledOptionIds = useMemo(() => getDisabledOptionIds(values), [values])
+  const currentCode = useMemo(() => {
+    const changed = new Map<SandboxOption, number>()
+    for (const [opt, s] of state) {
+      if (s.currentIndex !== getDefaultIndex(s.definition)) {
+        changed.set(opt, s.currentIndex)
+      }
+    }
+    return encodePresetToCode(changed)
+  }, [state])
+
+  const disabledOptionIds = useMemo(() => {
+    const set = new Set<SandboxOption>()
+    for (const [opt, s] of state) {
+      if (!s.isEnabled) set.add(opt)
+    }
+    return set
+  }, [state])
 
   const initializedFromUrl = useRef(false)
 
-  // Initialize from URL on first mount only
   useEffect(() => {
     if (urlCode && !initializedFromUrl.current) {
-      const { values: decoded } = decodeSandboxCode(urlCode)
-      setValues(decoded)
+      const decoded = decodeCodeToPreset(urlCode)
+      const newState = createDefaultState()
+      for (const [opt, idx] of decoded) {
+        const entry = newState.get(opt)
+        if (entry) {
+          newState.set(opt, { ...entry, currentIndex: idx })
+        }
+      }
+      for (const [opt, s] of newState) {
+        applyCascade(newState, opt, s.currentIndex)
+      }
+      setState(newState)
       setDecodeInput(urlCode)
       initializedFromUrl.current = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [urlCode])
 
-  // Sync currentCode back out (after init). Purely a notification —
-  // this context has no idea it's feeding a router search param.
   useEffect(() => {
     if (!onCodeChange) return
     if (initializedFromUrl.current || !urlCode) {
@@ -108,17 +131,20 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
     }
   }, [currentCode, urlCode, onCodeChange])
 
-  // Mirror decodeInput into a ref so handleDecode can stay referentially
-  // stable (empty dep array) without reading stale state. Using a
-  // functional setState updater here instead would run twice under
-  // StrictMode and double-fire the toast/decode side effects.
   const decodeInputRef = useRef(decodeInput)
   useEffect(() => {
     decodeInputRef.current = decodeInput
   }, [decodeInput])
 
-  const setValue = useCallback((optionId: number, valueIndex: number) => {
-    setValues((prev) => ({ ...prev, [optionId]: valueIndex }))
+  const setValue = useCallback((option: SandboxOption, valueIndex: number) => {
+    setState((prev) => {
+      const next = new Map(prev)
+      const entry = next.get(option)
+      if (!entry) return prev
+      next.set(option, { ...entry, currentIndex: valueIndex })
+      applyCascade(next, option, valueIndex)
+      return next
+    })
   }, [])
 
   const handleDecode = useCallback(() => {
@@ -127,45 +153,56 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
       toast.error('Please enter a code to decode.')
       return
     }
-    const { values: decodedValues, warnings } = decodeSandboxCode(trimmed)
-    setValues(decodedValues)
-    setDecodeWarnings(warnings)
-    if (warnings.length > 0) {
-      toast.warning('Decoded with warnings. See alerts below.')
-    } else {
-      toast.success('Successfully decoded Sandbox Code.')
+    const decoded = decodeCodeToPreset(trimmed)
+    const newState = createDefaultState()
+    for (const [opt, idx] of decoded) {
+      const entry = newState.get(opt)
+      if (entry) {
+        newState.set(opt, { ...entry, currentIndex: idx })
+      }
     }
+    for (const [opt, s] of newState) {
+      applyCascade(newState, opt, s.currentIndex)
+    }
+    setState(newState)
+    toast.success('Successfully decoded Sandbox Code.')
   }, [])
 
   const resetAll = useCallback(() => {
-    setValues(defaultValues)
+    setState(createDefaultState())
     setDecodeInput('')
-    setDecodeWarnings([])
     setSearchQuery('')
     toast.info('Reset to default values.')
   }, [])
 
   const handleRandomizeAll = useCallback(() => {
-    const newValues: Record<number, number> = {}
+    const newState = new Map<SandboxOption, SandboxOptionState>()
 
-    for (const opt of sandboxOptions) {
-      const len = getValueSetLength(opt)
-      newValues[opt.id] = len > 0 ? Math.floor(Math.random() * len) : opt.defaultValueIndex
+    for (const def of SANDBOX_OPTION_DEFINITIONS) {
+      const vs = getValueSet(def)
+      const len = vs.values.length
+      const idx = len > 0 ? Math.floor(Math.random() * len) : getDefaultIndex(def)
+      newState.set(def.option, {
+        definition: def,
+        currentIndex: idx,
+        isEnabled: true,
+      })
     }
 
-    let disabled = getDisabledOptionIds(newValues)
-    for (const id of disabled) {
-      const opt = optionsById.get(id)
-      if (opt) newValues[id] = opt.defaultValueIndex
+    for (const [opt, s] of newState) {
+      applyCascade(newState, opt, s.currentIndex)
+    }
+    for (const [opt, s] of newState) {
+      applyCascade(newState, opt, s.currentIndex)
     }
 
-    disabled = getDisabledOptionIds(newValues)
-    for (const id of disabled) {
-      const opt = optionsById.get(id)
-      if (opt) newValues[id] = opt.defaultValueIndex
+    for (const [, s] of newState) {
+      if (!s.isEnabled) {
+        s.currentIndex = getDefaultIndex(s.definition)
+      }
     }
 
-    setValues(newValues)
+    setState(newState)
     toast.info('Randomized all options.')
   }, [])
 
@@ -175,23 +212,25 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
   }, [])
 
   const groupedOptions = useMemo(() => {
-    const groups: Record<string, SandboxOption[]> = {}
-    for (const opt of sandboxOptions) {
-      if (!groups[opt.category]) groups[opt.category] = []
-      groups[opt.category].push(opt)
+    const groups: Record<string, SandboxOptionDefinition[]> = {}
+    for (const [cat, defs] of optionsByCategory) {
+      groups[cat] = defs
     }
     return groups
   }, [])
 
   const changedOptions = useMemo(() => {
-    return sandboxOptions.filter((opt) => values[opt.id] !== opt.defaultValueIndex)
-  }, [values])
+    return SANDBOX_OPTION_DEFINITIONS.filter((def) => {
+      const s = state.get(def.option)
+      return s && s.currentIndex !== getDefaultIndex(def)
+    })
+  }, [state])
 
   const groupedChangedOptions = useMemo(() => {
-    const groups: Record<string, SandboxOption[]> = {}
-    for (const opt of changedOptions) {
-      if (!groups[opt.category]) groups[opt.category] = []
-      groups[opt.category].push(opt)
+    const groups: Record<string, SandboxOptionDefinition[]> = {}
+    for (const def of changedOptions) {
+      if (!groups[def.categoryName]) groups[def.categoryName] = []
+      groups[def.categoryName].push(def)
     }
     return groups
   }, [changedOptions])
@@ -199,12 +238,12 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
   const filteredGroups = useMemo(() => {
     if (!searchQuery) return groupedOptions
     const lowerQuery = searchQuery.toLowerCase()
-    const groups: Record<string, SandboxOption[]> = {}
+    const groups: Record<string, SandboxOptionDefinition[]> = {}
     for (const [cat, opts] of Object.entries(groupedOptions)) {
       const filtered = opts.filter(
-        (opt) =>
-          getDisplayName(opt.enumName).toLowerCase().includes(lowerQuery) ||
-          opt.enumName.toLowerCase().includes(lowerQuery)
+        (def) =>
+          getDisplayName(def).toLowerCase().includes(lowerQuery) ||
+          getEnumName(def.option).toLowerCase().includes(lowerQuery),
       )
       if (filtered.length > 0) groups[cat] = filtered
     }
@@ -214,12 +253,12 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
   const filteredChangedGroups = useMemo(() => {
     if (!searchQuery) return groupedChangedOptions
     const lowerQuery = searchQuery.toLowerCase()
-    const groups: Record<string, SandboxOption[]> = {}
+    const groups: Record<string, SandboxOptionDefinition[]> = {}
     for (const [cat, opts] of Object.entries(groupedChangedOptions)) {
       const filtered = opts.filter(
-        (opt) =>
-          getDisplayName(opt.enumName).toLowerCase().includes(lowerQuery) ||
-          opt.enumName.toLowerCase().includes(lowerQuery)
+        (def) =>
+          getDisplayName(def).toLowerCase().includes(lowerQuery) ||
+          getEnumName(def.option).toLowerCase().includes(lowerQuery),
       )
       if (filtered.length > 0) groups[cat] = filtered
     }
@@ -238,17 +277,16 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
   }), [setValue, handleDecode, resetAll, handleRandomizeAll, copyToClipboard])
 
   const valuesValue = useMemo<SandboxValuesContextValue>(() => ({
-    values,
+    state,
     disabledOptionIds,
-  }), [values, disabledOptionIds])
+  }), [state, disabledOptionIds])
 
   const uiValue = useMemo<SandboxUIContextValue>(() => ({
     decodeInput,
-    decodeWarnings,
     searchQuery,
     activeTab,
     currentCode,
-  }), [decodeInput, decodeWarnings, searchQuery, activeTab, currentCode])
+  }), [decodeInput, searchQuery, activeTab, currentCode])
 
   const derivedValue = useMemo<SandboxDerivedContextValue>(() => ({
     groupedOptions,
@@ -294,10 +332,6 @@ export function useSandboxDerived() {
   return ctx
 }
 
-// Convenience hook for components that genuinely need "a bit of
-// everything" (e.g. the top-level view). Fine to use here because it
-// only wraps layout — the heavy per-option lists use the granular
-// hooks above plus React.memo instead.
 export function useSandboxCodec() {
   return {
     ...useSandboxActions(),

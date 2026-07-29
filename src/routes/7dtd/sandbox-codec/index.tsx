@@ -19,6 +19,7 @@ function SandboxCodecWrapper() {
         navigate({
           search: (prev) => ({ ...prev, code: newCode }),
           replace: true,
+          resetScroll: false,
         })
       }
     />
