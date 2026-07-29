@@ -1,6 +1,7 @@
 {
   "files": [],
   "compilerOptions": {
+    "target": "es2025",
     "paths": {
       "@/*": ["./src/*"]
     }

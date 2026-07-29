@@ -1,12 +1,14 @@
 import { memo } from 'react'
-import { type SandboxOption, getDisplayName, getDescription } from '@/features/sandbox-codec/core/sandboxOptions'
+import type { SandboxOptionDefinition } from '@/features/sandbox-codec/core/sandbox-option-definition.types'
+import { getDefaultIndex } from '@/features/sandbox-codec/core/sandbox-option-registry'
+import { getDisplayName, getDescription } from '@/features/sandbox-codec/core/localization'
 import { OptionControl } from './OptionControl'
 import { Badge } from '@/shared/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/shared/ui/tooltip'
 import { HelpCircleIcon } from 'lucide-react'
 
 interface OptionRowProps {
-  option: SandboxOption
+  option: SandboxOptionDefinition
   currentValueIndex: number
   isDisabled: boolean
   isReadOnly?: boolean
@@ -18,14 +20,14 @@ interface OptionRowProps {
 // object) and skip re-rendering rows whose value didn't actually change,
 // even when a *different* option elsewhere changes.
 function OptionRowImpl({ option, currentValueIndex, isDisabled, isReadOnly }: OptionRowProps) {
-  const isDefault = currentValueIndex === option.defaultValueIndex
-  const description = getDescription(option.enumName)
+  const isDefault = currentValueIndex === getDefaultIndex(option)
+  const description = getDescription(option)
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-card text-card-foreground shadow-sm gap-4 transition-all">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">{getDisplayName(option.enumName)}</span>
+          <span className="font-semibold">{getDisplayName(option)}</span>
           {description && (
             <Tooltip>
               <TooltipTrigger className="cursor-help text-muted-foreground hover:text-foreground transition-colors">

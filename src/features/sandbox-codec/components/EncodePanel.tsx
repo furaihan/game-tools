@@ -2,9 +2,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Badge } from '@/shared/ui/badge'
 import { OptionRow } from './OptionRow'
 import { useSandboxValues, useSandboxDerived } from '@/features/sandbox-codec/context/SandboxCodecContext'
+import { getDefaultIndex } from '@/features/sandbox-codec/core/sandbox-option-registry'
 
 export function EncodePanel() {
-  const { values, disabledOptionIds } = useSandboxValues()
+  const { state, disabledOptionIds } = useSandboxValues()
   const { filteredGroups } = useSandboxDerived()
   const categoryKeys = Object.keys(filteredGroups)
 
@@ -22,7 +23,10 @@ export function EncodePanel() {
         <TabsList className="flex flex-wrap w-full h-auto gap-2 bg-transparent justify-start mb-6 px-0">
           {categoryKeys.map((cat) => {
             const opts = filteredGroups[cat]
-            const modifiedCount = opts.filter((o) => values[o.id] !== o.defaultValueIndex).length
+            const modifiedCount = opts.filter((o) => {
+              const s = state.get(o.option)
+              return s && s.currentIndex !== getDefaultIndex(o)
+            }).length
             return (
               <TabsTrigger
                 key={cat}
@@ -42,12 +46,12 @@ export function EncodePanel() {
         {categoryKeys.map((cat) => (
           <TabsContent key={cat} value={cat} className="mt-0 outline-none">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-              {filteredGroups[cat].map((opt) => (
+              {filteredGroups[cat].map((def) => (
                 <OptionRow
-                  key={opt.id}
-                  option={opt}
-                  currentValueIndex={values[opt.id] ?? opt.defaultValueIndex}
-                  isDisabled={disabledOptionIds.has(opt.id)}
+                  key={def.option}
+                  option={def}
+                  currentValueIndex={state.get(def.option)?.currentIndex ?? getDefaultIndex(def)}
+                  isDisabled={disabledOptionIds.has(def.option)}
                 />
               ))}
             </div>
