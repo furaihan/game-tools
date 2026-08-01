@@ -1,10 +1,14 @@
 import type { WaterMap, RiverGenParams, RiverGenStatus } from '../types/river-generator'
 import { createPRNG } from '@/features/biome-generator/core/prng'
-import { createNoise2D } from './noise'
+import { createValueNoise2D } from './noise'
 import { stampCircle, strokeLineTapered } from './stamp'
 
 const MIN_SEGMENT_LENGTH = 4
 const DISPLACEMENT_DECAY = 0.55
+// Caps midpoint displacement tree size (~2^depth leaves); 14 covers resolution up to ~8192.
+const MAX_RECURSION_DEPTH = 14
+// Derived seed for the value-noise generator; keep offsets distinct per generator.
+const NOISE_SEED_OFFSET = 1
 
 function distSq(x1: number, y1: number, x2: number, y2: number): number {
   const dx = x1 - x2
@@ -62,7 +66,10 @@ function midpointDisplace(
   height: number,
 ): [number, number][] {
   const d = distance(ax, ay, bx, by)
-  const maxDepth = Math.ceil(Math.log2(Math.max(d, 1) / MIN_SEGMENT_LENGTH))
+  const maxDepth = Math.min(
+    MAX_RECURSION_DEPTH,
+    Math.ceil(Math.log2(Math.max(d, 1) / MIN_SEGMENT_LENGTH)),
+  )
   return midpointDisplaceRecursive(ax, ay, bx, by, prng, roughness, displacementDecay, maxDepth, width, height)
 }
 
@@ -94,6 +101,22 @@ function pickEdgePoint(prng: () => number, width: number, height: number, edge: 
   }
 }
 
+function collectEdgeCells(width: number, height: number): { x: number; y: number }[] {
+  const marginY = Math.max(1, Math.floor(height * 0.1))
+  const marginX = Math.max(1, Math.floor(width * 0.1))
+
+  const cells: { x: number; y: number }[] = []
+  for (let y = marginY; y < height - marginY; y++) {
+    cells.push({ x: 0, y })
+    cells.push({ x: width - 1, y })
+  }
+  for (let x = marginX; x < width - marginX; x++) {
+    cells.push({ x, y: 0 })
+    cells.push({ x, y: height - 1 })
+  }
+  return cells
+}
+
 function findNearestValidEdgePoint(
   prng: () => number,
   width: number,
@@ -103,30 +126,15 @@ function findNearestValidEdgePoint(
   mainRiverDirX: number,
   mainRiverDirY: number,
   data: Uint8Array,
+  edgeCells: { x: number; y: number }[],
 ): [number, number] {
-  const marginY = Math.max(1, Math.floor(height * 0.1))
-  const marginX = Math.max(1, Math.floor(width * 0.1))
-
   const candidates: { x: number; y: number; distSq: number }[] = []
 
-  for (let y = marginY; y < height - marginY; y++) {
-    const idx = y * width
-    if (data[idx] === 0) {
-      candidates.push({ x: 0, y, distSq: (0 - fromX) ** 2 + (y - fromY) ** 2 })
-    }
-    if (data[idx + width - 1] === 0) {
-      candidates.push({ x: width - 1, y, distSq: (width - 1 - fromX) ** 2 + (y - fromY) ** 2 })
-    }
-  }
-  for (let x = marginX; x < width - marginX; x++) {
-    const idxTop = x
-    if (data[idxTop] === 0) {
-      candidates.push({ x, y: 0, distSq: (x - fromX) ** 2 + (0 - fromY) ** 2 })
-    }
-    const idxBottom = (height - 1) * width + x
-    if (data[idxBottom] === 0) {
-      candidates.push({ x, y: height - 1, distSq: (x - fromX) ** 2 + (height - 1 - fromY) ** 2 })
-    }
+  for (const cell of edgeCells) {
+    if (data[cell.y * width + cell.x] !== 0) continue
+    const dx = cell.x - fromX
+    const dy = cell.y - fromY
+    candidates.push({ x: cell.x, y: cell.y, distSq: dx * dx + dy * dy })
   }
 
   if (candidates.length === 0) {
@@ -191,6 +199,16 @@ function selectBranchPoints(
   return selected
 }
 
+function throttle(fn: (t: number) => void, step = 0.05): (t: number) => void {
+  let lastT = -1
+  return (t: number) => {
+    if (t - lastT >= step || t >= 1) {
+      lastT = t
+      fn(t)
+    }
+  }
+}
+
 function stampRiver(
   data: Uint8Array,
   width: number,
@@ -200,6 +218,7 @@ function stampRiver(
   startTaper: number,
   endTaper: number,
   noise2D: (x: number, y: number) => number,
+  onProgress?: (t: number) => void,
 ): void {
   const len = points.length
   if (len === 0) return
@@ -218,6 +237,7 @@ function stampRiver(
     const noise = 1.0 + noise2D(points[0][0] * 0.1, points[0][1] * 0.1) * 0.15
     const radius = (baseWidth * startTaper * noise) / 2
     stampCircle(data, width, height, points[0][0], points[0][1], radius, 1)
+    onProgress?.(1)
     return
   }
 
@@ -244,6 +264,7 @@ function stampRiver(
     }
 
     cursor += segLen
+    onProgress?.(i / (len - 1))
   }
 }
 
@@ -321,6 +342,8 @@ function ensureBranchConnects(
 }
 
 function smoothGrid(data: Uint8Array, width: number, height: number, iterations: number): void {
+  // Cellular-automata cleanup: erode water with <3 wet neighbors, dilate land with >=6.
+  // Aggressive rules; thin rivers (branchWidth 2-3px) get eaten if iterations rise — keep at 1.
   const totalPixels = width * height
   const temp = new Uint8Array(totalPixels)
 
@@ -362,7 +385,7 @@ export function generateRiversCore(
 
   const data = new Uint8Array(width * height)
   const prng = createPRNG(seed)
-  const noise2D = createNoise2D(seed + 1)
+  const noise2D = createValueNoise2D(seed + NOISE_SEED_OFFSET)
 
   onStatus?.({ phase: 'Picking river source', progress: 0 })
 
@@ -382,11 +405,16 @@ export function generateRiversCore(
 
   onStatus?.({ phase: 'Stamping main stem', progress: 0.35 })
 
-  stampRiver(data, width, height, smoothed, mainStemWidth, 0.5, 1.0, noise2D)
+  stampRiver(
+    data, width, height, smoothed, mainStemWidth, 0.5, 1.0, noise2D,
+    throttle((t) => onStatus?.({ phase: 'Stamping main stem', progress: 0.35 + t * 0.15 })),
+  )
 
   onStatus?.({ phase: 'Selecting branch points', progress: 0.5 })
 
   const branchIndices = selectBranchPoints(smoothed, branchCount, prng)
+
+  const edgeCells = collectEdgeCells(width, height).filter(c => data[c.y * width + c.x] === 0)
 
   onStatus?.({
     phase: 'Walking tributaries',
@@ -395,9 +423,10 @@ export function generateRiversCore(
   })
 
   for (let b = 0; b < branchIndices.length; b++) {
+    const branchProgress = 0.55 + (b / branchIndices.length) * 0.4
     onStatus?.({
       phase: 'Walking tributaries',
-      progress: 0.55 + (b / branchIndices.length) * 0.4,
+      progress: branchProgress,
       detail: `${b + 1} of ${branchIndices.length} branches placed`,
     })
 
@@ -414,6 +443,7 @@ export function generateRiversCore(
       branchPointX, branchPointY,
       dirX, dirY,
       data,
+      edgeCells,
     )
 
     const branch = midpointDisplace(
@@ -424,7 +454,15 @@ export function generateRiversCore(
     )
     const smoothedBranch = smoothPath(branch, 2)
 
-    stampRiver(data, width, height, smoothedBranch, branchWidth, 1.0, 0.3, noise2D)
+    const nextBranchProgress = 0.55 + ((b + 1) / branchIndices.length) * 0.4
+    stampRiver(
+      data, width, height, smoothedBranch, branchWidth, 1.0, 0.3, noise2D,
+      throttle((t) => onStatus?.({
+        phase: 'Walking tributaries',
+        progress: branchProgress + t * (nextBranchProgress - branchProgress),
+        detail: `${b + 1} of ${branchIndices.length} branches placed`,
+      })),
+    )
 
     ensureBranchConnects(data, width, height, smoothedBranch, branchPointX, branchPointY)
   }

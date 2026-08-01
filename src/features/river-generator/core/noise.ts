@@ -1,6 +1,6 @@
 import { createPRNG } from '@/features/biome-generator/core/prng'
 
-export function createNoise2D(seed: number) {
+export function createValueNoise2D(seed: number) {
   const prng = createPRNG(seed)
   const size = 256
   const values = new Float32Array(size)
