@@ -1,16 +1,27 @@
 import React, { useRef, useState, useEffect, useCallback } from "react"
 
+export type ViewportInteractionMode = "pan" | "paint"
+export type PaintPhase = "start" | "move" | "end"
+
 export function useCanvasViewport({
   contentWidth,
   contentHeight,
+  interactionMode = "pan",
+  onContentPaint,
 }: {
   contentWidth: number
   contentHeight: number
+  interactionMode?: ViewportInteractionMode
+  onContentPaint?: (
+    pos: { x: number; y: number } | null,
+    phase: PaintPhase
+  ) => void
 }) {
   const viewportRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
+  const [painting, setPainting] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
   const fit = useCallback(() => {
@@ -51,30 +62,103 @@ export function useCanvasViewport({
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
+      if (interactionMode === "paint" && e.button === 0) {
+        const pos = screenToContent(
+          e.clientX,
+          e.clientY,
+          viewportRef,
+          scale,
+          pan,
+          contentWidth,
+          contentHeight
+        )
+        if (pos) {
+          setPainting(true)
+          e.currentTarget.setPointerCapture(e.pointerId)
+          onContentPaint?.(pos, "start")
+        }
+        return
+      }
       if (e.button === 0 || e.button === 1) {
         setIsDragging(true)
         setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
       }
     },
-    [pan]
+    [interactionMode, onContentPaint, scale, pan, contentWidth, contentHeight]
   )
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
+      if (interactionMode === "paint" && painting) {
+        onContentPaint?.(
+          screenToContent(
+            e.clientX,
+            e.clientY,
+            viewportRef,
+            scale,
+            pan,
+            contentWidth,
+            contentHeight
+          ),
+          "move"
+        )
+        return
+      }
       if (isDragging) {
         setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
       }
     },
-    [isDragging, dragStart]
+    [
+      interactionMode,
+      painting,
+      onContentPaint,
+      isDragging,
+      dragStart,
+      scale,
+      pan,
+      contentWidth,
+      contentHeight,
+    ]
   )
 
-  const onPointerUp = useCallback(() => {
-    setIsDragging(false)
-  }, [])
+  const endPaintStroke = useCallback(
+    (e: React.PointerEvent) => {
+      if (interactionMode === "paint" && painting) {
+        setPainting(false)
+        onContentPaint?.(
+          screenToContent(
+            e.clientX,
+            e.clientY,
+            viewportRef,
+            scale,
+            pan,
+            contentWidth,
+            contentHeight
+          ),
+          "end"
+        )
+        return true
+      }
+      return false
+    },
+    [interactionMode, painting, onContentPaint, scale, pan, contentWidth, contentHeight]
+  )
 
-  const onPointerLeave = useCallback(() => {
-    setIsDragging(false)
-  }, [])
+  const onPointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (endPaintStroke(e)) return
+      setIsDragging(false)
+    },
+    [endPaintStroke]
+  )
+
+  const onPointerLeave = useCallback(
+    (e: React.PointerEvent) => {
+      if (endPaintStroke(e)) return
+      setIsDragging(false)
+    },
+    [endPaintStroke]
+  )
 
   return {
     scale,

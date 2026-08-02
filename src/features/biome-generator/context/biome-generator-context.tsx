@@ -2,6 +2,15 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect, ty
 import type { BiomeDef, BiomeMap, AlgorithmName, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
 import type { WaterMap } from '@/features/river-generator/types/river-generator'
 
+export type PaintTool = 'pan' | 'erase' | 'add-water'
+export type BrushShape = 'circle' | 'square'
+export type BrushRect = { x0: number; y0: number; x1: number; y1: number }
+
+export const DEFAULT_BRUSH_SIZE = 4
+export const MIN_BRUSH_SIZE = 1
+export const MAX_BRUSH_SIZE = 30
+const MAX_UNDO_DEPTH = 10
+
 interface BiomeGeneratorState {
   biomes: BiomeDef[]
   seed: number
@@ -23,6 +32,10 @@ interface BiomeGeneratorState {
     roughness: number
   }
   riverGenerationStatus: GenerationStatus | null
+  paintTool: PaintTool
+  brushShape: BrushShape
+  brushSize: number
+  undoDepth: number
 }
 
 interface BiomeGeneratorActions {
@@ -42,6 +55,12 @@ interface BiomeGeneratorActions {
   setRiverParams: (params: Partial<{ branchCount: number; mainStemWidth: number; branchWidth: number; roughness: number }>) => void
   generateRivers: () => void
   clearRivers: () => void
+  setPaintTool: (tool: PaintTool) => void
+  setBrushShape: (shape: BrushShape) => void
+  setBrushSize: (size: number) => void
+  beginWaterStroke: () => void
+  applyBrush: (x: number, y: number, mode: 'erase' | 'add-water') => BrushRect | null
+  undoWaterEdit: () => void
 }
 
 type BiomeGeneratorContextValue = BiomeGeneratorState & BiomeGeneratorActions
@@ -127,10 +146,34 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
   })
   const [riverGenerationStatus, setRiverGenerationStatus] = useState<GenerationStatus | null>(null)
   const [riverNonce, setRiverNonce] = useState(0)
+  const [paintTool, setPaintToolState] = useState<PaintTool>('pan')
+  const [brushShape, setBrushShapeState] = useState<BrushShape>('circle')
+  const [brushSize, setBrushSizeState] = useState(DEFAULT_BRUSH_SIZE)
+  const [undoDepth, setUndoDepth] = useState(0)
 
   const workerRef = useRef<Worker | null>(null)
   const filterWorkerRef = useRef<Worker | null>(null)
   const riverWorkerRef = useRef<Worker | null>(null)
+  const waterMapRef = useRef<WaterMap | null>(null)
+  const brushSizeRef = useRef(DEFAULT_BRUSH_SIZE)
+  const brushShapeRef = useRef<BrushShape>('circle')
+  const undoStackRef = useRef<Uint8Array[]>([])
+
+  useEffect(() => {
+    waterMapRef.current = waterMap
+  }, [waterMap])
+
+  useEffect(() => {
+    brushSizeRef.current = brushSize
+  }, [brushSize])
+
+  useEffect(() => {
+    brushShapeRef.current = brushShape
+  }, [brushShape])
+
+  useEffect(() => {
+    if (!waterMap) setPaintToolState('pan')
+  }, [waterMap])
 
   useEffect(() => {
     return () => {
@@ -147,6 +190,74 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const clearUndoStack = useCallback(() => {
+    undoStackRef.current = []
+    setUndoDepth(0)
+  }, [])
+
+  const setPaintTool = useCallback((tool: PaintTool) => {
+    setPaintToolState(tool)
+  }, [])
+
+  const setBrushShape = useCallback((shape: BrushShape) => {
+    setBrushShapeState(shape)
+  }, [])
+
+  const setBrushSize = useCallback((size: number) => {
+    setBrushSizeState(Math.max(MIN_BRUSH_SIZE, Math.min(MAX_BRUSH_SIZE, size)))
+  }, [])
+
+  const beginWaterStroke = useCallback(() => {
+    const water = waterMapRef.current
+    if (!water) return
+    const stack = undoStackRef.current
+    stack.push(water.data.slice())
+    if (stack.length > MAX_UNDO_DEPTH) stack.shift()
+    setUndoDepth(stack.length)
+  }, [])
+
+  const applyBrush = useCallback((x: number, y: number, mode: 'erase' | 'add-water'): BrushRect | null => {
+    const water = waterMapRef.current
+    if (!water) return null
+    const radius = brushSizeRef.current
+    if (radius <= 0) return null
+    const width = water.width
+    const height = water.height
+    const x0 = Math.max(0, x - radius)
+    const x1 = Math.min(width - 1, x + radius)
+    const y0 = Math.max(0, y - radius)
+    const y1 = Math.min(height - 1, y + radius)
+    if (x0 > x1 || y0 > y1) return null
+    const value = mode === 'erase' ? 0 : 1
+    const isCircle = brushShapeRef.current === 'circle'
+    const r2 = radius * radius
+    for (let py = y0; py <= y1; py++) {
+      for (let px = x0; px <= x1; px++) {
+        if (isCircle) {
+          const dx = px - x
+          const dy = py - y
+          if (dx * dx + dy * dy > r2) continue
+        }
+        water.data[py * width + px] = value
+      }
+    }
+    return { x0, y0, x1, y1 }
+  }, [])
+
+  const undoWaterEdit = useCallback(() => {
+    const stack = undoStackRef.current
+    const snapshot = stack.pop()
+    const water = waterMapRef.current
+    if (!snapshot || !water) return
+    setWaterMap({
+      width: water.width,
+      height: water.height,
+      seed: water.seed,
+      data: snapshot,
+    })
+    setUndoDepth(stack.length)
+  }, [])
+
   const randomizeSeed = useCallback(() => {
     setSeed(Math.floor(Math.random() * 1000000))
   }, [])
@@ -160,9 +271,10 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setIsFiltered(false)
     setError(null)
     setWaterMap(null)
+    clearUndoStack()
     setWaterColor('#001234')
     setRiverParamsState({ branchCount: 4, mainStemWidth: 8, branchWidth: 4, roughness: 0.4 })
-  }, [])
+  }, [clearUndoStack])
 
   const runGeneration = useCallback((seedToUse: number) => {
     if (biomes.length === 0 || biomes.every(b => b.weight <= 0)) {
@@ -174,6 +286,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
     setIsFiltered(false)
     setGenerationStatus({ phase: "Starting…", progress: 0 })
     setWaterMap(null)
+    clearUndoStack()
 
     riverWorkerRef.current?.terminate()
     filterWorkerRef.current?.terminate()
@@ -217,7 +330,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
       biomes,
       algorithm,
     })
-  }, [biomes, resolution, algorithm])
+  }, [biomes, resolution, algorithm, clearUndoStack])
 
   const generate = useCallback(() => {
     runGeneration(seed)
@@ -338,6 +451,7 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
           break
         case 'success':
           setWaterMap(e.data.data)
+          clearUndoStack()
           setIsGeneratingRivers(false)
           setRiverGenerationStatus(null)
           break
@@ -367,12 +481,13 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
       branchWidth: riverParams.branchWidth,
       roughness: riverParams.roughness,
     })
-  }, [biomeMap, riverParams, riverNonce])
+  }, [biomeMap, riverParams, riverNonce, clearUndoStack])
 
   const clearRivers = useCallback(() => {
     setWaterMap(null)
+    clearUndoStack()
     setRiverGenerationStatus(null)
-  }, [])
+  }, [clearUndoStack])
 
   return (
     <BiomeGeneratorContext.Provider
@@ -391,6 +506,11 @@ export function BiomeGeneratorProvider({ children }: { children: ReactNode }) {
         waterMap, waterColor, setWaterColor,
         isGeneratingRivers, riverParams, setRiverParams,
         riverGenerationStatus, generateRivers, clearRivers,
+        paintTool, setPaintTool,
+        brushShape, setBrushShape,
+        brushSize, setBrushSize,
+        undoDepth,
+        beginWaterStroke, applyBrush, undoWaterEdit,
       }}
 
     >

@@ -1,11 +1,22 @@
 import type { ReactNode } from "react"
-import { useCanvasViewport, screenToContent } from "./useCanvasViewport"
+import {
+  useCanvasViewport,
+  screenToContent,
+  type ViewportInteractionMode,
+  type PaintPhase,
+} from "./useCanvasViewport"
 
 interface CanvasViewportProps {
   contentWidth: number
   contentHeight: number
   children: (helpers: { scale: number }) => ReactNode
   showPlaceholder?: boolean
+  interactionMode?: ViewportInteractionMode
+  toolbarSlot?: ReactNode
+  onContentPaint?: (
+    pos: { x: number; y: number } | null,
+    phase: PaintPhase
+  ) => void
   onContentPointerMove?: (
     contentPos: { x: number; y: number } | null
   ) => void
@@ -16,6 +27,9 @@ export function CanvasViewport({
   contentHeight,
   children,
   showPlaceholder = false,
+  interactionMode,
+  toolbarSlot,
+  onContentPaint,
   onContentPointerMove,
 }: CanvasViewportProps) {
   const {
@@ -28,7 +42,12 @@ export function CanvasViewport({
     onPointerMove,
     onPointerUp,
     onPointerLeave,
-  } = useCanvasViewport({ contentWidth, contentHeight })
+  } = useCanvasViewport({
+    contentWidth,
+    contentHeight,
+    interactionMode,
+    onContentPaint,
+  })
 
   const handlePointerMove = (e: React.PointerEvent) => {
     onPointerMove(e)
@@ -47,8 +66,8 @@ export function CanvasViewport({
     }
   }
 
-  const handlePointerLeave = (_e: React.PointerEvent) => {
-    onPointerLeave()
+  const handlePointerLeave = (e: React.PointerEvent) => {
+    onPointerLeave(e)
     onContentPointerMove?.(null)
   }
 
@@ -71,6 +90,12 @@ export function CanvasViewport({
         >
           Fit
         </button>
+        {toolbarSlot && (
+          <>
+            <div className="mx-1 h-4 w-px bg-border" />
+            {toolbarSlot}
+          </>
+        )}
       </div>
 
       {showPlaceholder ? (
@@ -79,7 +104,11 @@ export function CanvasViewport({
         </div>
       ) : (
         <div
-          className="absolute inset-0 flex items-center justify-center cursor-move overflow-hidden"
+          className={`absolute inset-0 flex items-center justify-center overflow-hidden ${
+            interactionMode === "paint"
+              ? "cursor-crosshair"
+              : "cursor-move"
+          }`}
           onWheel={onWheel}
           onPointerDown={onPointerDown}
           onPointerMove={handlePointerMove}

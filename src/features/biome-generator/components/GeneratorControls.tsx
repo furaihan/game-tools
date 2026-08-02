@@ -15,11 +15,24 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/shared/ui/tooltip";
-import { DicesIcon, Grid3X3Icon, FilterIcon, DownloadIcon, CopyIcon, ShuffleIcon } from "lucide-react";
+import {
+  DicesIcon,
+  Grid3X3Icon,
+  FilterIcon,
+  DownloadIcon,
+  CopyIcon,
+  ShuffleIcon,
+  DropletsIcon,
+} from "lucide-react";
 import type { AlgorithmName } from "@/features/biome-generator/types/biome-generator";
 import { RiverControls } from "@/features/river-generator/components/RiverControls";
-import { Separator } from "@/shared/ui/separator";
 import { useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/shared/ui/accordion";
 
 const ALGORITHMS: AlgorithmName[] = [
   "Random Seeds",
@@ -68,7 +81,7 @@ export function GeneratorControls() {
   return (
     <TooltipProvider>
       <div className="flex h-full flex-col">
-        <div className="flex-1 space-y-6 overflow-y-auto p-4">
+        <div className="flex-1 space-y-6 overflow-y-auto p-4">            
           <div className="flex items-center justify-between">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
               Controls
@@ -83,10 +96,19 @@ export function GeneratorControls() {
             </Button>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Biome Preset
-            </Label>
+          <Accordion defaultValue={["biome"]} className="space-y-4">
+            <AccordionItem value="biome">
+              <AccordionTrigger className="px-1">
+                <span className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <Grid3X3Icon className="h-3.5 w-3.5" />
+                  Biome Generation
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    Biome Preset
+                  </Label>
             <Select
               defaultValue="7 Days to Die"
               onValueChange={(v) => v && loadPreset(v)}
@@ -255,13 +277,24 @@ export function GeneratorControls() {
                   : isFiltered
                     ? "Majority Filter Applied"
                     : "Apply Majority Filter"}
-              </TooltipContent>
+                </TooltipContent>
             </Tooltip>
           </div>
+          </AccordionContent>
+          </AccordionItem>
 
-          <Separator />
-
-          <RiverControls />
+          <AccordionItem value="river">
+            <AccordionTrigger className="px-1">
+              <span className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <DropletsIcon className="h-3.5 w-3.5" />
+                River Generation
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <RiverControls />
+            </AccordionContent>
+          </AccordionItem>
+          </Accordion>
 
           <div className="space-y-2">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
