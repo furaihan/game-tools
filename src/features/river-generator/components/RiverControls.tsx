@@ -32,10 +32,6 @@ export function RiverControls() {
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          River Generation
-        </Label>
-
         <div className="space-y-2">
           <Label className="text-[10px] text-muted-foreground">Branches</Label>
           <Input
