@@ -15,7 +15,14 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/shared/ui/dropdown-menu";
-import { Label } from "./shared/ui/label";
+
+/* Nav style — active = full weight + primary underline sweep */
+const navItemClass = (active: boolean) =>
+  `relative flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-all duration-200 after:absolute after:inset-x-3 after:-bottom-px after:h-0.5 after:origin-left after:bg-primary after:transition-transform after:duration-300 after:ease-out ${
+    active
+      ? "font-semibold text-foreground after:scale-x-100"
+      : "text-muted-foreground after:scale-x-0 hover:bg-accent/50 hover:text-foreground hover:after:scale-x-100"
+  }`;
 
 function ThemeToggle() {
   const { isDark, toggle } = useTheme();
@@ -26,9 +33,25 @@ function ThemeToggle() {
           variant="ghost"
           size="icon"
           onClick={toggle}
-          className="h-8 w-8 text-muted-foreground hover:text-foreground animate-pulse"
+          className="group h-8 w-8 text-muted-foreground transition-all hover:text-foreground active:scale-90"
         >
-          {isDark ? <SunIcon className="h-4 w-4" /> : <MoonIcon className="h-4 w-4" />}
+          {/* crossfade + rotate between sun/moon, tilts on hover */}
+          <span className="relative flex h-4 w-4 items-center justify-center transition-transform duration-500 ease-out group-hover:rotate-45">
+            <SunIcon
+              className={`absolute h-4 w-4 transition-all duration-500 ${
+                isDark
+                  ? "rotate-0 scale-100 opacity-100"
+                  : "-rotate-90 scale-0 opacity-0"
+              }`}
+            />
+            <MoonIcon
+              className={`absolute h-4 w-4 transition-all duration-500 ${
+                isDark
+                  ? "rotate-90 scale-0 opacity-0"
+                  : "rotate-0 scale-100 opacity-100"
+              }`}
+            />
+          </span>
         </Button>
       </TooltipTrigger>
       <TooltipContent>
@@ -52,28 +75,28 @@ export default function App() {
   return (
     <ThemeProvider>
       <TooltipProvider delay={300}>
-        <div className="min-h-screen flex flex-col">
+        <div className="flex min-h-screen flex-col bg-background text-foreground bg-[radial-gradient(color-mix(in_oklab,currentColor_5%,transparent)_1px,transparent_1px)] bg-size-[22px_22px]">
+          {/* brand accent line */}
+          <div className="h-0.5 bg-primary" />
+
           <header className="flex h-14 items-center justify-between border-b bg-background px-4">
             <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <Gamepad2Icon className="h-5 w-5 text-primary" />
-                <h1 className="text-sm font-semibold tracking-tight">
-                  Game Tools
-                </h1>
-              </div>
+              {/* brand */}
+              <Link to="/" className="group flex items-center gap-2.5">
+                <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary transition-transform duration-300 ease-out group-hover:-rotate-12">
+                  <Gamepad2Icon className="h-4 w-4" />
+                </span>
+                <span className="flex items-baseline gap-2">
+                  <h1 className="text-sm font-bold tracking-tight">
+                    Game Tools<span className="text-primary">.</span>
+                  </h1>
+                </span>
+              </Link>
+
+              {/* nav */}
               <nav className="flex items-center gap-1">
-                <Link
-                  to="/"
-                  className={`relative text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${
-                    location.pathname === "/"
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                  }`}
-                >
+                <Link to="/" className={navItemClass(location.pathname === "/")}>
                   Home
-                  {location.pathname === "/" && (
-                    <span className="absolute -bottom-px inset-x-3 h-0.5 rounded-sm bg-primary" />
-                  )}
                 </Link>
                 {Object.entries(
                   tools.reduce<Record<string, typeof tools>>((acc, tool) => {
@@ -90,32 +113,30 @@ export default function App() {
                         openOnHover
                         delay={100}
                         closeDelay={0}
-                        className={`relative text-sm font-medium px-3 py-1.5 rounded-md transition-colors flex items-center gap-1 ${
-                          isActive
-                            ? "text-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                        }`}
+                        className={`group ${navItemClass(isActive)}`}
                       >
                         {category}
-                        <ChevronDownIcon className="h-4 w-4" />
-                        {isActive && (
-                          <span className="absolute -bottom-px inset-x-3 h-0.5 rounded-sm bg-primary" />
-                        )}
+                        <ChevronDownIcon className="h-3.5 w-3.5 transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent>
+                      <DropdownMenuContent className="min-w-44">
                         {categoryTools.map((tool) => {
                           const Icon = tool.icon;
+                          const active = location.pathname === tool.href;
                           return (
                             <DropdownMenuItem
                               key={tool.href}
                               render={<Link to={tool.href} />}
-                              className={
-                                location.pathname === tool.href
-                                  ? "border-l-2 border-primary pl-1 text-foreground font-medium"
-                                  : ""
-                              }
+                              className={`group/item border-l-2 pl-1 ${
+                                active
+                                  ? "border-primary font-medium text-foreground"
+                                  : "border-transparent"
+                              }`}
                             >
-                              <Icon className="h-4 w-4" />
+                              <Icon
+                                className={`h-4 w-4 transition-transform duration-200 group-hover/item:-rotate-12 ${
+                                  active ? "text-primary" : ""
+                                }`}
+                              />
                               {tool.title}
                             </DropdownMenuItem>
                           );
@@ -126,13 +147,38 @@ export default function App() {
                 })}
               </nav>
             </div>
-            <ThemeToggle />
+
+            <div className="flex items-center gap-3">
+              {/* live route readout — updates as you navigate */}
+              <code className="hidden border px-2 py-1 font-mono text-[10px] tracking-wider text-muted-foreground md:inline-block">
+                <span className="text-primary">~</span>
+                {location.pathname}
+              </code>
+              <ThemeToggle />
+            </div>
           </header>
-          <main className="flex flex-1 min-h-0 min-w-0 overflow-auto">
-            <Outlet />
+
+          <main className="flex min-h-0 min-w-0 flex-1 overflow-auto">
+            {/* keyed on path → subtle rise/fade on every route change */}
+            <div
+              key={location.pathname}
+              className="flex min-w-0 flex-1 flex-col transition-all duration-300 ease-out starting:translate-y-2 starting:opacity-0"
+            >
+              <Outlet />
+            </div>
           </main>
-          <footer className="flex py-2 items-center justify-end border-t bg-background px-4 text-xs text-muted-foreground">
-            &#10004; Deployed at: {formattedDate}
+
+          <footer className="flex items-center justify-between border-t bg-background px-4 py-2 font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+              </span>
+              System ready
+            </span>
+            <span>
+              Deployed · <span className="text-foreground/80">{formattedDate}</span>
+            </span>
           </footer>
         </div>
       </TooltipProvider>
