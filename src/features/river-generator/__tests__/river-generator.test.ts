@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { generateRiversCore } from '../core/river-generator'
+import { generateRiversCore, buildRiverTrace } from '../core/river-generator'
 import type { RiverGenStatus } from '../types/river-generator'
 
 describe('generateRiversCore', () => {
@@ -115,5 +115,83 @@ describe('generateRiversCore', () => {
     const last = statuses[statuses.length - 1]
     expect(last.phase).toBe('Done')
     expect(last.progress).toBe(1)
+  })
+
+  test('branches are distributed across both banks, not clustered on one', () => {
+    const runs = 40
+    const branchCount = 8
+    let desiredNeg = 0
+    let desiredTotal = 0
+    let mismatch = 0
+    let comparable = 0
+    let allSameRuns = 0
+
+    for (let seed = 0; seed < runs; seed++) {
+      const trace = buildRiverTrace({
+        width: 256, height: 256, seed, branchCount, mainStemWidth: 4, branchWidth: 2, roughness: 0.4,
+      })
+      let neg = 0
+      let pos = 0
+      for (const branch of trace.branches) {
+        if (branch.desiredSide < 0) desiredNeg++
+        desiredTotal++
+        if (branch.side === 0) continue
+        if (branch.side < 0) neg++
+        else pos++
+        comparable++
+        if (branch.desiredSide !== branch.side) mismatch++
+      }
+      if (neg === 0 || pos === 0) allSameRuns++
+    }
+
+    expect(desiredTotal).toBeGreaterThan(0)
+    expect(desiredNeg / desiredTotal).toBeGreaterThan(0.4)
+    expect(desiredNeg / desiredTotal).toBeLessThan(0.6)
+    expect(mismatch / comparable).toBeLessThanOrEqual(0.2)
+    expect(allSameRuns).toBeLessThanOrEqual(Math.ceil(runs / 4))
+  })
+
+  test('high roughness does not produce near-90 degree kinks in the main stem', () => {
+    const maxTurnAngle = (points: [number, number][]) => {
+      let maxDeg = 0
+      for (let i = 1; i < points.length - 1; i++) {
+        const vx1 = points[i][0] - points[i - 1][0]
+        const vy1 = points[i][1] - points[i - 1][1]
+        const vx2 = points[i + 1][0] - points[i][0]
+        const vy2 = points[i + 1][1] - points[i][1]
+        const l1 = Math.hypot(vx1, vy1)
+        const l2 = Math.hypot(vx2, vy2)
+        if (l1 < 1e-6 || l2 < 1e-6) continue
+        const cross = vx1 * vy2 - vy1 * vx2
+        const dot = vx1 * vx2 + vy1 * vy2
+        const deg = Math.abs(Math.atan2(cross, dot)) * 180 / Math.PI
+        if (deg > maxDeg) maxDeg = deg
+      }
+      return maxDeg
+    }
+
+    for (let seed = 0; seed < 20; seed++) {
+      const trace = buildRiverTrace({
+        width: 256, height: 256, seed, branchCount: 5, mainStemWidth: 4, branchWidth: 2, roughness: 0.7,
+      })
+      expect(maxTurnAngle(trace.smoothed)).toBeLessThan(85)
+      for (const branch of trace.branches) {
+        expect(maxTurnAngle(branch.points)).toBeLessThan(80)
+      }
+    }
+  })
+
+  test('branch reconnection fallback never draws a straight scar', () => {
+    let totalReconnectPixels = 0
+    for (let seed = 0; seed < 30; seed++) {
+      const trace = buildRiverTrace({
+        width: 256, height: 256, seed, branchCount: 5, mainStemWidth: 4, branchWidth: 2, roughness: 0.4,
+      })
+      for (const branch of trace.branches) {
+        expect(branch.reconnectPixels).toBeLessThanOrEqual(30)
+        totalReconnectPixels += branch.reconnectPixels
+      }
+    }
+    expect(totalReconnectPixels).toBeLessThanOrEqual(150)
   })
 })

@@ -1,20 +1,17 @@
 import type { WaterMap, RiverGenParams, RiverGenStatus } from '../types/river-generator'
 import { createPRNG } from '@/features/biome-generator/core/prng'
 import { createValueNoise2D } from './noise'
-import { stampCircle, strokeLineTapered } from './stamp'
+import { stampCircle } from './stamp'
 
 const MIN_SEGMENT_LENGTH = 4
-const DISPLACEMENT_DECAY = 0.55
+// <= 0.5 keeps relative displacement bounded at fine scales (displacement/d scales as (2*decay)^n).
+const DISPLACEMENT_DECAY = 0.5
+// Caps a single split's perpendicular offset so a segment can never reverse on itself.
+const MAX_DISPLACEMENT_RATIO = 0.3
 // Caps midpoint displacement tree size (~2^depth leaves); 14 covers resolution up to ~8192.
 const MAX_RECURSION_DEPTH = 14
 // Derived seed for the value-noise generator; keep offsets distinct per generator.
 const NOISE_SEED_OFFSET = 1
-
-function distSq(x1: number, y1: number, x2: number, y2: number): number {
-  const dx = x1 - x2
-  const dy = y1 - y2
-  return dx * dx + dy * dy
-}
 
 function distance(x1: number, y1: number, x2: number, y2: number): number {
   return Math.hypot(x2 - x1, y2 - y1)
@@ -41,11 +38,24 @@ function midpointDisplaceRecursive(
   const pdx = -(by - ay) / d
   const pdy = (bx - ax) / d
 
-  const displacement = (prng() * 2 - 1) * roughness * d
+  const maxDisp = MAX_DISPLACEMENT_RATIO * d
+  const displacement = Math.max(-maxDisp, Math.min(maxDisp, (prng() * 2 - 1) * roughness * d))
   let mpx = mx + pdx * displacement
   let mpy = my + pdy * displacement
-  mpx = Math.max(0, Math.min(width - 1, mpx))
-  mpy = Math.max(0, Math.min(height - 1, mpy))
+
+  let scale = 1
+  if (mpx < 0) {
+    scale = Math.min(scale, mx / (mx - mpx))
+  } else if (mpx > width - 1) {
+    scale = Math.min(scale, (width - 1 - mx) / (mpx - mx))
+  }
+  if (mpy < 0) {
+    scale = Math.min(scale, my / (my - mpy))
+  } else if (mpy > height - 1) {
+    scale = Math.min(scale, (height - 1 - my) / (mpy - my))
+  }
+  mpx = mx + (mpx - mx) * scale
+  mpy = my + (mpy - my) * scale
 
   const nextRoughness = roughness * displacementDecay
   const nextDepth = maxDepth - 1
@@ -125,16 +135,18 @@ function findNearestValidEdgePoint(
   fromY: number,
   mainRiverDirX: number,
   mainRiverDirY: number,
+  desiredSide: number,
   data: Uint8Array,
   edgeCells: { x: number; y: number }[],
 ): [number, number] {
-  const candidates: { x: number; y: number; distSq: number }[] = []
+  const candidates: { x: number; y: number; distSq: number; side: number }[] = []
 
   for (const cell of edgeCells) {
     if (data[cell.y * width + cell.x] !== 0) continue
     const dx = cell.x - fromX
     const dy = cell.y - fromY
-    candidates.push({ x: cell.x, y: cell.y, distSq: dx * dx + dy * dy })
+    const cross = mainRiverDirX * dy - mainRiverDirY * dx
+    candidates.push({ x: cell.x, y: cell.y, distSq: dx * dx + dy * dy, side: Math.sign(cross) })
   }
 
   if (candidates.length === 0) {
@@ -145,19 +157,33 @@ function findNearestValidEdgePoint(
   const ndx = dirLen > 0 ? mainRiverDirX / dirLen : 0
   const ndy = dirLen > 0 ? mainRiverDirY / dirLen : 0
 
-  const awayCandidates = candidates.filter(c => {
+  const isAway = (c: { x: number; y: number }) => {
     const ex = c.x - fromX
     const ey = c.y - fromY
     const elen = Math.hypot(ex, ey)
     if (elen < 1) return false
     const dot = (ex / elen) * ndx + (ey / elen) * ndy
     return dot < 0.5
-  })
+  }
 
-  const pool = awayCandidates.length > 0 ? awayCandidates : candidates
-  pool.sort((a, b) => a.distSq - b.distSq)
+  const nearest = (pool: { x: number; y: number; distSq: number }[]) => {
+    pool.sort((a, b) => a.distSq - b.distSq)
+    return pool[0]
+  }
 
-  const best = pool[0]
+  const onSide = candidates.filter(c => c.side === desiredSide)
+  const onSideAway = onSide.filter(isAway)
+  const otherAway = candidates.filter(c => c.side !== desiredSide && isAway(c))
+
+  const pool = onSideAway.length > 0
+    ? onSideAway
+    : onSide.length > 0
+      ? onSide
+      : otherAway.length > 0
+        ? otherAway
+        : candidates
+
+  const best = nearest(pool)
   const jx = best.x + Math.floor(prng() * 5) - 2
   const jy = best.y + Math.floor(prng() * 5) - 2
   return [Math.max(0, Math.min(width - 1, jx)), Math.max(0, Math.min(height - 1, jy))]
@@ -273,72 +299,35 @@ function ensureBranchConnects(
   width: number,
   height: number,
   branch: [number, number][],
-  targetX: number,
-  targetY: number,
-): void {
-  if (branch.length === 0) return
+): number {
+  if (branch.length === 0) return 0
 
-  const lastX = branch[branch.length - 1][0]
-  const lastY = branch[branch.length - 1][1]
-  const lx = Math.round(lastX)
-  const ly = Math.round(lastY)
-  if (lx < 0 || lx >= width || ly < 0 || ly >= height) return
+  const originX = Math.round(branch[0][0])
+  const originY = Math.round(branch[0][1])
+  if (originX < 0 || originX >= width || originY < 0 || originY >= height) return 0
 
-  const totalPixels = width * height
-  const visited = new Uint8Array(totalPixels)
-  const queue = new Int32Array(256)
-  let qHead = 0
-  let qTail = 0
-
-  const startIdx = ly * width + lx
-  if (startIdx < 0 || startIdx >= totalPixels) return
-  visited[startIdx] = 1
-  queue[qTail++] = startIdx
-
-  let foundMainStem = false
-
-  while (qHead < qTail && qTail < 250) {
-    const idx = queue[qHead++]
-    const x = idx % width
-    const y = Math.floor(idx / width)
-
-    if (distSq(x, y, targetX, targetY) < 4) {
-      foundMainStem = true
-      break
-    }
-
-    for (const d of [-width, width, -1, 1]) {
-      const nIdx = idx + d
-      if (nIdx < 0 || nIdx >= totalPixels) continue
-      if (Math.abs((nIdx % width) - x) > 1) continue
-      if (data[nIdx] !== 1 || visited[nIdx]) continue
-      visited[nIdx] = 1
-      queue[qTail++] = nIdx
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      const nx = originX + dx
+      const ny = originY + dy
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+      if (data[ny * width + nx] === 1) return 0
     }
   }
 
-  if (foundMainStem) return
-
-  const dx = targetX - lastX
-  const dy = targetY - lastY
-  const dist = Math.hypot(dx, dy)
-  if (dist < 0.5) return
-
-  const steps = Math.max(1, Math.ceil(dist))
-  const connector: [number, number][] = []
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps
-    const px = Math.round(lastX + dx * t)
-    const py = Math.round(lastY + dy * t)
-    if (px >= 0 && px < width && py >= 0 && py < height) {
-      connector.push([px, py])
-      if (data[py * width + px] === 1) break
+  const painted: number[] = []
+  for (let dy = -3; dy <= 3; dy++) {
+    for (let dx = -3; dx <= 3; dx++) {
+      const nx = originX + dx
+      const ny = originY + dy
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+      if (data[ny * width + nx] === 0) painted.push(ny * width + nx)
     }
   }
 
-  if (connector.length > 1) {
-    strokeLineTapered(data, width, height, connector, 1, 1, 1)
-  }
+  stampCircle(data, width, height, originX, originY, 2, 1)
+
+  return painted.filter(idx => data[idx] === 1).length
 }
 
 function smoothGrid(data: Uint8Array, width: number, height: number, iterations: number): void {
@@ -377,10 +366,28 @@ function smoothGrid(data: Uint8Array, width: number, height: number, iterations:
   }
 }
 
-export function generateRiversCore(
+export interface RiverBranchTrace {
+  origin: [number, number]
+  points: [number, number][]
+  side: number
+  desiredSide: number
+  reconnectPixels: number
+}
+
+export interface RiverTrace {
+  width: number
+  height: number
+  seed: number
+  centerline: [number, number][]
+  smoothed: [number, number][]
+  branches: RiverBranchTrace[]
+  waterMap: Uint8Array
+}
+
+export function buildRiverTrace(
   params: RiverGenParams,
   onStatus?: (status: RiverGenStatus) => void,
-): WaterMap {
+): RiverTrace {
   const { width, height, seed, branchCount, mainStemWidth, branchWidth, roughness } = params
 
   const data = new Uint8Array(width * height)
@@ -401,7 +408,7 @@ export function generateRiversCore(
   onStatus?.({ phase: 'Generating main stem centerline', progress: 0.1 })
 
   const centerline = midpointDisplace(sx, sy, tx, ty, prng, roughness, DISPLACEMENT_DECAY, width, height)
-  const smoothed = smoothPath(centerline, 2)
+  const smoothed = smoothPath(centerline, 2 + Math.round(roughness * 4))
 
   onStatus?.({ phase: 'Stamping main stem', progress: 0.35 })
 
@@ -410,11 +417,14 @@ export function generateRiversCore(
     throttle((t) => onStatus?.({ phase: 'Stamping main stem', progress: 0.35 + t * 0.15 })),
   )
 
+  const branchSmoothIter = 2 + Math.round(roughness * 1.2 * 4)
+
   onStatus?.({ phase: 'Selecting branch points', progress: 0.5 })
 
   const branchIndices = selectBranchPoints(smoothed, branchCount, prng)
 
   const edgeCells = collectEdgeCells(width, height).filter(c => data[c.y * width + c.x] === 0)
+  const branches: RiverBranchTrace[] = []
 
   onStatus?.({
     phase: 'Walking tributaries',
@@ -438,10 +448,12 @@ export function generateRiversCore(
     const dirX = smoothed[nextIdx][0] - smoothed[prevIdx][0]
     const dirY = smoothed[nextIdx][1] - smoothed[prevIdx][1]
 
+    const desiredSide = prng() < 0.5 ? -1 : 1
     const [edgeX, edgeY] = findNearestValidEdgePoint(
       prng, width, height,
       branchPointX, branchPointY,
       dirX, dirY,
+      desiredSide,
       data,
       edgeCells,
     )
@@ -452,7 +464,9 @@ export function generateRiversCore(
       prng, roughness * 1.2, DISPLACEMENT_DECAY,
       width, height,
     )
-    const smoothedBranch = smoothPath(branch, 2)
+    const smoothedBranch = smoothPath(branch, branchSmoothIter)
+
+    const side = Math.sign(dirX * (edgeY - branchPointY) - dirY * (edgeX - branchPointX))
 
     const nextBranchProgress = 0.55 + ((b + 1) / branchIndices.length) * 0.4
     stampRiver(
@@ -464,7 +478,8 @@ export function generateRiversCore(
       })),
     )
 
-    ensureBranchConnects(data, width, height, smoothedBranch, branchPointX, branchPointY)
+    const reconnectPixels = ensureBranchConnects(data, width, height, smoothedBranch)
+    branches.push({ origin: [branchPointX, branchPointY], points: smoothedBranch, side, desiredSide, reconnectPixels })
   }
 
   onStatus?.({ phase: 'Smoothing river edges', progress: 0.95 })
@@ -473,5 +488,13 @@ export function generateRiversCore(
 
   onStatus?.({ phase: 'Done', progress: 1 })
 
-  return { width, height, seed, data }
+  return { width, height, seed, centerline, smoothed, branches, waterMap: data }
+}
+
+export function generateRiversCore(
+  params: RiverGenParams,
+  onStatus?: (status: RiverGenStatus) => void,
+): WaterMap {
+  const trace = buildRiverTrace(params, onStatus)
+  return { width: trace.width, height: trace.height, seed: trace.seed, data: trace.waterMap }
 }
