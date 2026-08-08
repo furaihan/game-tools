@@ -4,7 +4,7 @@ import type {
   BiomeGenerator,
   GenerationStatus,
 } from "@/features/biome-generator/types/biome-generator";
-import { createPRNG } from "./prng";
+import { createPRNG } from '@/shared/utils/prng';
 import { getNormalizedWeights, pickBiomeIndex } from "./utils";
 
 export class WeightedExpansionGenerator implements BiomeGenerator {

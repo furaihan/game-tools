@@ -1,5 +1,5 @@
 import type { BiomeDef, BiomeMap, BiomeGenerator, GenerationStatus } from '@/features/biome-generator/types/biome-generator'
-import { createPRNG } from './prng'
+import { createPRNG } from '@/shared/utils/prng'
 import { getNormalizedWeights, pickBiomeIndex } from './utils'
 
 function distSq(x1: number, y1: number, x2: number, y2: number): number {

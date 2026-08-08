@@ -1,4 +1,4 @@
-import { createPRNG } from '@/features/biome-generator/core/prng'
+import { createPRNG } from '@/shared/utils/prng'
 
 export function createValueNoise2D(seed: number) {
   const prng = createPRNG(seed)

@@ -1,6 +1,6 @@
 import type { WaterMap, RiverGenParams, RiverGenStatus } from '../types/river-generator'
-import { createPRNG } from '@/features/biome-generator/core/prng'
-import { createValueNoise2D } from './noise'
+import { createPRNG } from '@/shared/utils/prng'
+import { createValueNoise2D } from '@/shared/utils/noise'
 import { stampCircle } from './stamp'
 
 const MIN_SEGMENT_LENGTH = 4
