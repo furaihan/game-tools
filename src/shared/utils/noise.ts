@@ -42,3 +42,27 @@ export function createValueNoise2D(seed: number) {
     return nx0 + v * (nx1 - nx0)
   }
 }
+
+// Fractal Brownian Motion: stacks several octaves of noise into one organic
+// field instead of a single flat frequency. Returns roughly -1..1.
+export function fbm2D(
+  noise: (x: number, y: number) => number,
+  x: number,
+  y: number,
+  octaves: number,
+  persistence = 0.5,
+): number {
+  let total = 0
+  let frequency = 1
+  let amplitude = 1
+  let maxValue = 0
+
+  for (let i = 0; i < octaves; i++) {
+    total += noise(x * frequency, y * frequency) * amplitude
+    maxValue += amplitude
+    amplitude *= persistence
+    frequency *= 2
+  }
+
+  return total / maxValue
+}

@@ -44,6 +44,7 @@ const ALGORITHMS: AlgorithmName[] = [
   "Recursive Split",
   "Weighted Expansion",
   "Biome Islands",
+  "Climate Clustering",
 ];
 
 const RESOLUTIONS = [256, 512, 1024, 2048];

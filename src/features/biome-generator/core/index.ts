@@ -8,6 +8,7 @@ import { ProbabilityFieldsGenerator } from './probability-fields'
 import { RecursiveSplitGenerator } from './recursive-split'
 import { WeightedExpansionGenerator } from './weighted-expansion'
 import { BiomeIslandsGenerator } from './biome-islands'
+import { ClimateClusterGenerator } from './climate-clustering'
 
 export const generators: Record<AlgorithmName, BiomeGenerator> = {
   "Random Seeds": new RandomSeedsGenerator(),
@@ -19,4 +20,5 @@ export const generators: Record<AlgorithmName, BiomeGenerator> = {
   "Recursive Split": new RecursiveSplitGenerator(),
   "Weighted Expansion": new WeightedExpansionGenerator(),
   "Biome Islands": new BiomeIslandsGenerator(),
+  "Climate Clustering": new ClimateClusterGenerator(),
 }

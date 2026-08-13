@@ -32,5 +32,6 @@ export type AlgorithmName =
   | "Recursive Split"
   | "Weighted Expansion"
   | "Biome Islands"
+  | "Climate Clustering"
 
 
