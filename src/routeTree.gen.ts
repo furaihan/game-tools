@@ -10,17 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as R7dtdSandboxCodecIndexRouteImport } from './routes/7dtd/sandbox-codec/index'
 import { Route as R7dtdBiomeLayoutGeneratorIndexRouteImport } from './routes/7dtd/biome-layout-generator/index'
+import { Route as R7dtdSandboxCodecIndexRouteImport } from './routes/7dtd/sandbox-codec/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const R7dtdSandboxCodecIndexRoute = R7dtdSandboxCodecIndexRouteImport.update({
-  id: '/7dtd/sandbox-codec/',
-  path: '/7dtd/sandbox-codec/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const R7dtdBiomeLayoutGeneratorIndexRoute =
@@ -29,6 +24,11 @@ const R7dtdBiomeLayoutGeneratorIndexRoute =
     path: '/7dtd/biome-layout-generator/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const R7dtdSandboxCodecIndexRoute = R7dtdSandboxCodecIndexRouteImport.update({
+  id: '/7dtd/sandbox-codec/',
+  path: '/7dtd/sandbox-codec/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -70,18 +70,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/7dtd/sandbox-codec/': {
-      id: '/7dtd/sandbox-codec/'
-      path: '/7dtd/sandbox-codec'
-      fullPath: '/7dtd/sandbox-codec/'
-      preLoaderRoute: typeof R7dtdSandboxCodecIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/7dtd/biome-layout-generator/': {
       id: '/7dtd/biome-layout-generator/'
       path: '/7dtd/biome-layout-generator'
       fullPath: '/7dtd/biome-layout-generator/'
       preLoaderRoute: typeof R7dtdBiomeLayoutGeneratorIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/7dtd/sandbox-codec/': {
+      id: '/7dtd/sandbox-codec/'
+      path: '/7dtd/sandbox-codec'
+      fullPath: '/7dtd/sandbox-codec/'
+      preLoaderRoute: typeof R7dtdSandboxCodecIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }

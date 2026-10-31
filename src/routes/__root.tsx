@@ -1,4 +1,4 @@
-import { createRootRoute, Link } from '@tanstack/react-router'
+import { createRootRoute, Link, type ErrorComponentProps } from '@tanstack/react-router'
 import App from '@/App'
 
 export const Route = createRootRoute({
@@ -17,11 +17,11 @@ function NotFound() {
   )
 }
 
-function RouteError({ error }: { error: Error }) {
+function RouteError({ error }: ErrorComponentProps) {
   return (
     <div className="flex flex-col items-center justify-center min-h-60 gap-4">
       <h2 className="text-xl font-semibold">Something went wrong</h2>
-      <p className="text-muted-foreground">{error.message}</p>
+      <p className="text-muted-foreground">{error instanceof Error ? error.message : String(error)}</p>
       <Link to="/" className="text-primary underline underline-offset-2">Go home</Link>
     </div>
   )
