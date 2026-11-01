@@ -23,14 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
-.agents/
-skills-lock.json
 __pycache__/
 .tanstack/
 .env
 .env.*
 .ref
-.claude
 
 # Graphify
 .graphify/
