@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "sync-skills": "node scripts/sync-intent-skills.mjs",
     "test": "bun test",
     "preview": "vite preview"
   },
