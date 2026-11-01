@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "playwright": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@playwright/mcp@0.0.84",
+          "--headless",
+          "--browser",
+          "msedge",
+          "--allowed-origins",
+          "http://localhost:5173",
+          "--output-dir",
+          ".playwright-mcp",
+          "--console-level",
+          "error",
+          "--timeout-settle",
+          "2000"
+        ]
+      }
+    }
+  }
+}
