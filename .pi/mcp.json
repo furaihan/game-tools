@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.84",
+        "--headless",
+        "--browser",
+        "msedge",
+        "--isolated",
+        "--viewport-size",
+        "1440x900",
+        "--allowed-origins",
+        "http://localhost:5173",
+        "--console-level",
+        "error",
+        "--timeout-settle",
+        "2000",
+        "--output-dir",
+        ".playwright-mcp"
+      ],
+      "exposure": "direct",
+      "timeout": 180000,
+      "description": "Drive the Game Tools dev server (http://localhost:5173) in a real headless browser: navigate, click, read console/network, screenshot, and evaluate JS against the canvas."
+    }
+  }
+}

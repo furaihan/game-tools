@@ -422,6 +422,124 @@ No standalone route — integrated as a sub-component within the Biome Layout Ge
 ### Integration
 The River Generator is a shared feature module imported by the biome-layout-generator's `GeneratorControls` component, writing into a `WaterMap`.
 
+## Verifying UI with Playwright MCP
+
+A Playwright MCP server is configured in `.pi/mcp.json` (project scope, pi only). It drives a real
+headless browser against the dev server so UI changes can be verified without a human clicking.
+
+### Setup
+
+```bash
+bun run dev          # MUST be running first — the server is locked to http://localhost:5173
+pi mcp list          # validates the config; expect "playwright: connected, N tools (direct, project)"
+```
+
+Then `/reload` in the pi TUI if the session started before `.pi/mcp.json` existed. Tools appear as
+`mcp__playwright__browser_navigate`, `browser_click`, `browser_evaluate`, etc.
+
+**Use `--browser msedge`.** Chrome is not installed on this machine and `--browser chrome` /
+`--browser chromium` fail with `Browser "chrome-for-testing" is not installed; expected executable at
+...\ms-playwright\chromium-1252\chrome-win64\chrome.exe` (the local cache only has rev 1228).
+
+**Vite binds IPv6 only.** `http://127.0.0.1:5173` is refused; always use `http://localhost:5173`.
+
+### Rules that matter here
+
+1. **Canvases are invisible to accessibility snapshots.** `browser_snapshot` and `browser_click`
+   cannot see or assert on `<canvas>`. Assert rendered output by hashing `getImageData()` — never with
+   a screenshot (screenshots need `--caps vision` and are visual-only).
+2. **One `browser_run_code_unsafe` call beats a pile of `browser_evaluate` polls.** It executes a real
+   Playwright function (argument: `page`) and returns its value, so `page.waitForSelector`,
+   `page.waitForFunction`, `page.fill` and `page.click` all work. `page.fill` correctly drives
+   React-controlled inputs (no native-value-setter trick needed).
+3. **Never trust `browser_navigate`'s settle time for readiness.** Measured cold route loads on this
+   dev server: home ≈2.0s, `/7dtd/biome-layout-generator/` ≈6.6s, `/7dtd/sandbox-codec/` ≈6.6s —
+   all slower than the configured `--timeout-settle 2000`. Always `waitForSelector` on a testid first.
+4. **Settle detection must poll UI state, not page text.** `document.body.innerText.includes('Generating')`
+   is wrong: the overlay is a portaled `Dialog` that unmounts instantly and `isGenerating` flips fast.
+   Wait for the generate button to be enabled again with a `Regenerate` label. Measured: 1024px
+   generates in <1s, 2048px in ≈2s, but always allow a 60s timeout (worst case in tests was 90s+
+   when a click landed before hydration).
+5. **Target `data-testid`, not button text.** Buttons are rendered through base-ui
+   `TooltipTrigger render={<Button/>}` and accordion panels collapse, so text matching intermittently
+   fails outright.
+6. **Always `--isolated`.** The default persistent profile is per-workspace and only one instance can
+   hold it; `--isolated` keeps concurrent agents and repeated runs from colliding.
+7. Pass `getContext('2d', { willReadFrequently: true })` when sampling canvas pixels, otherwise Chrome
+   logs a `Canvas2D: Multiple readback operations...` warning.
+
+### `data-testid` anchors
+
+Keep these stable — they are the contract between the UI and any browser automation.
+
+| Testid | Element |
+| --- | --- |
+| `tool-card-<href-with-dashes>` | Home page tool card (`tool-card-7dtd-biome-layout-generator`) |
+| `biome-layout-generator` | Biome tool root |
+| `biome-controls` | Controls sidebar |
+| `biome-preset-trigger` / `biome-preset-option-<7dtd\|minecraft\|valheim\|earth>` | Preset select |
+| `biome-seed-input` / `biome-randomize-seed` | Seed number input + dice button |
+| `biome-resolution-trigger` / `biome-resolution-option-<256\|512\|1024\|2048>` | Resolution select |
+| `biome-algorithm-trigger` / `biome-algorithm-option-<Name>` | Algorithm select (names contain spaces) |
+| `biome-generate` | Generate / Regenerate / Generating… |
+| `biome-randomize-regenerate` | Randomize & Regenerate |
+| `biome-majority-filter` | Apply Majority Filter |
+| `biome-export-png` / `biome-copy-seed` / `biome-reset-all` | Export, copy seed, reset |
+| `biome-error` | Error banner (rendered only on failure) |
+| `biome-canvas` | The `<canvas>` (width/height = map resolution) |
+| `canvas-status-bar` / `canvas-cursor` / `canvas-info` | Bottom status bar, hover readout |
+| `generating-overlay` | Blocking progress dialog |
+| `river-controls`, `river-branch-count`, `river-main-stem-width`, `river-branch-width`, `river-roughness`, `river-water-color`, `river-water-color-hex`, `river-generate`, `river-clear` | River panel |
+| `sandbox-codec`, `codec-randomize-all`, `codec-reset-all`, `codec-search`, `codec-live-code`, `codec-length`, `codec-copy`, `codec-tab-decode`, `codec-tab-encode` | Sandbox codec shell |
+| `sandbox-option-<OptionName>`, `sandbox-value-<OptionName>`, `sandbox-inc-<OptionName>`, `sandbox-dec-<OptionName>` | Per-option row / value / steppers |
+
+When adding a tool, give every interactive control a `data-testid` following `<tool>-<control>` and
+add it to this table.
+
+### Recipe: deterministic canvas check (one call)
+
+```js
+// args: { code: "async (page) => { ... }" }
+// identical seed MUST produce an identical hash — verified: 777 -> 1206388552 twice, 12345 -> 1713016348
+async (page) => {
+  await page.waitForSelector('[data-testid="biome-generate"]', { timeout: 30000 })
+  await page.fill('[data-testid="biome-seed-input"]', '777')
+  await page.click('[data-testid="biome-generate"]')
+  await page.waitForFunction(() => {
+    const b = document.querySelector('[data-testid="biome-generate"]')
+    return b && !b.disabled && /Regenerate/.test(b.textContent)
+  }, null, { timeout: 60000 })
+  return await page.evaluate(() => {
+    const c = document.querySelector('[data-testid="biome-canvas"]')
+    const d = c.getContext('2d', { willReadFrequently: true })
+      .getImageData(0, 0, c.width, c.height).data
+    let h = 2166136261, nonBlank = 0
+    for (let i = 0; i < d.length; i += 4 * 97) {
+      h = (h ^ d[i]) * 16777619 >>> 0
+      if (d[i + 3] !== 0) nonBlank++
+    }
+    return { w: c.width, h: c.height, hash: h, nonBlank }
+  })
+}
+```
+
+Switch resolution with the select testids (`biome-resolution-trigger` → `biome-resolution-option-2048`);
+playing with the seed/resolution covers the worker pipeline, and `biome-majority-filter` should flip its
+label to `Majority Filter Applied`.
+
+If you must use `browser_evaluate` instead, remember its result is printed as a JSON-*escaped string*
+(`\"label\":\"Regenerate\"`), so match loosely (`/Regenerate/.test(s)`) rather than exact quotes.
+
+### Console output
+
+The config passes `--console-level error`, so `browser_console_messages` returns only errors. Current
+known-benign noise: a `BiomeGeneratorProvider rendering` log
+(`src/features/biome-generator/context/biome-generator-context.tsx:125`), a majority-filter timing log
+(`src/features/biome-generator/workers/biome-generator-filter.worker.ts:13`), and two
+`In HTML, %s cannot be a descendant of <%s>` errors from invalid element nesting.
+
+Screenshots, traces and console logs land in `.playwright-mcp/` (git-ignored).
+
 ## Future Games/Tools
 
 This project is designed to host multiple games and tools. Add new games as top-level route segments:
