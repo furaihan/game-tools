@@ -18,7 +18,7 @@ function BiomeLayoutGeneratorWrapper() {
 
 function BiomeLayoutGenerator() {
   return (
-    <div className="flex flex-1 min-h-0">
+    <div className="flex flex-1 min-h-0" data-testid="biome-layout-generator">
       <aside className="w-72 shrink-0 overflow-y-auto border-r bg-card">
         <GeneratorControls />
       </aside>

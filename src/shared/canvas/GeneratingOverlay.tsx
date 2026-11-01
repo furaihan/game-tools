@@ -21,7 +21,7 @@ export function GeneratingOverlay({ states }: GeneratingOverlayProps) {
   return (
     <Dialog open={true} onOpenChange={() => {}} disablePointerDismissal={true}>
       <DialogContent className="sm:max-w-sm bg-card" showCloseButton={false}>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4" data-testid="generating-overlay">
           <div className="flex items-center justify-center gap-3">
             <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <span className="font-mono text-sm font-medium">

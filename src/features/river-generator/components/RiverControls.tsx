@@ -31,7 +31,7 @@ export function RiverControls() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-4">
+      <div className="space-y-4" data-testid="river-controls">
         <div className="space-y-2">
           <Label className="text-[10px] text-muted-foreground">Branches</Label>
           <Input
@@ -42,6 +42,7 @@ export function RiverControls() {
             onChange={(e) => setRiverParams({ branchCount: Math.max(0, Math.min(12, parseInt(e.target.value) || 0)) })}
             className="font-mono text-sm"
             disabled={disabled}
+            data-testid="river-branch-count"
           />
         </div>
 
@@ -55,6 +56,7 @@ export function RiverControls() {
             onChange={(e) => setRiverParams({ mainStemWidth: Math.max(2, Math.min(20, parseInt(e.target.value) || 8)) })}
             className="font-mono text-sm"
             disabled={disabled}
+            data-testid="river-main-stem-width"
           />
         </div>
 
@@ -68,6 +70,7 @@ export function RiverControls() {
             onChange={(e) => setRiverParams({ branchWidth: Math.max(1, Math.min(15, parseInt(e.target.value) || 4)) })}
             className="font-mono text-sm"
             disabled={disabled}
+            data-testid="river-branch-width"
           />
         </div>
 
@@ -82,6 +85,7 @@ export function RiverControls() {
             onChange={(e) => setRiverParams({ roughness: Math.max(0.05, Math.min(1, parseFloat(e.target.value) || 0.4)) })}
             className="font-mono text-sm"
             disabled={disabled}
+            data-testid="river-roughness"
           />
         </div>
 
@@ -94,6 +98,7 @@ export function RiverControls() {
               onChange={(e) => setWaterColor(e.target.value)}
               className="h-8 w-12 cursor-pointer p-0.5"
               disabled={disabled}
+              data-testid="river-water-color"
             />
             <Input
               type="text"
@@ -108,6 +113,7 @@ export function RiverControls() {
               }}
               className="font-mono text-sm flex-1"
               disabled={disabled}
+              data-testid="river-water-color-hex"
             />
           </div>
         </div>
@@ -126,6 +132,7 @@ export function RiverControls() {
                   className="w-full gap-2"
                   onClick={generateRivers}
                   disabled={disabled}
+                  data-testid="river-generate"
                 >
                   <DropletsIcon className="h-4 w-4" />
                   {isGeneratingRivers ? 'Generating...' : waterMap ? 'Regenerate Rivers' : 'Generate Rivers'}
@@ -143,6 +150,7 @@ export function RiverControls() {
               className="w-full gap-2"
               onClick={clearRivers}
               disabled={isGeneratingRivers}
+              data-testid="river-clear"
             >
               <XIcon className="h-4 w-4" />
               Clear Rivers

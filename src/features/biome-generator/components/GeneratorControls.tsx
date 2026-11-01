@@ -81,7 +81,7 @@ export function GeneratorControls() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col" data-testid="biome-controls">
         <div className="flex-1 space-y-6 overflow-y-auto p-4">            
           <div className="flex items-center justify-between">
             <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -92,6 +92,7 @@ export function GeneratorControls() {
               size="sm"
               className="h-6 text-[10px] px-2"
               onClick={resetToDefaults}
+              data-testid="biome-reset-all"
             >
               Reset All
             </Button>
@@ -114,14 +115,14 @@ export function GeneratorControls() {
               defaultValue="7 Days to Die"
               onValueChange={(v) => v && loadPreset(v)}
             >
-              <SelectTrigger>
+              <SelectTrigger data-testid="biome-preset-trigger">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7 Days to Die">7 Days to Die</SelectItem>
-                <SelectItem value="Minecraft">Minecraft</SelectItem>
-                <SelectItem value="Valheim">Valheim</SelectItem>
-                <SelectItem value="Standard Earth">Standard Earth</SelectItem>
+                <SelectItem value="7 Days to Die" data-testid="biome-preset-option-7dtd">7 Days to Die</SelectItem>
+                <SelectItem value="Minecraft" data-testid="biome-preset-option-minecraft">Minecraft</SelectItem>
+                <SelectItem value="Valheim" data-testid="biome-preset-option-valheim">Valheim</SelectItem>
+                <SelectItem value="Standard Earth" data-testid="biome-preset-option-earth">Standard Earth</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -136,6 +137,7 @@ export function GeneratorControls() {
                 value={seed}
                 onChange={(e) => setSeed(parseInt(e.target.value) || 0)}
                 className="font-mono text-sm"
+                data-testid="biome-seed-input"
               />
               <Tooltip>
                 <TooltipTrigger
@@ -145,6 +147,7 @@ export function GeneratorControls() {
                       size="icon"
                       onClick={handleRandomizeSeed}
                       title="Randomize seed"
+                      data-testid="biome-randomize-seed"
                     >
                       <DicesIcon
                         className={
@@ -168,12 +171,12 @@ export function GeneratorControls() {
               value={resolution.toString()}
               onValueChange={(v) => v && setResolution(parseInt(v))}
             >
-              <SelectTrigger>
+              <SelectTrigger data-testid="biome-resolution-trigger">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {RESOLUTIONS.map((r) => (
-                  <SelectItem key={r} value={r.toString()}>
+                  <SelectItem key={r} value={r.toString()} data-testid={`biome-resolution-option-${r}`}>
                     {r} x {r}
                   </SelectItem>
                 ))}
@@ -189,12 +192,12 @@ export function GeneratorControls() {
               value={algorithm}
               onValueChange={(v) => v && setAlgorithm(v as AlgorithmName)}
             >
-              <SelectTrigger>
+              <SelectTrigger data-testid="biome-algorithm-trigger">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {ALGORITHMS.map((algo) => (
-                  <SelectItem key={algo} value={algo}>
+                  <SelectItem key={algo} value={algo} data-testid={`biome-algorithm-option-${algo}`}>
                     {algo}
                   </SelectItem>
                 ))}
@@ -212,6 +215,7 @@ export function GeneratorControls() {
                       generate();
                     }}
                     disabled={isGenerating || isFiltering}
+                    data-testid="biome-generate"
                   >
                     <Grid3X3Icon className="h-4 w-4" />
                     {isGenerating
@@ -242,6 +246,7 @@ export function GeneratorControls() {
                 }
               }}
               disabled={isGenerating || isFiltering}
+              data-testid="biome-randomize-regenerate"
             >
               <ShuffleIcon className="h-4 w-4" />
               {isGenerating ? "Generating..." : "Randomize & Regenerate"}
@@ -262,6 +267,7 @@ export function GeneratorControls() {
                     disabled={
                       !biomeMap || isGenerating || isFiltering || isFiltered
                     }
+                    data-testid="biome-majority-filter"
                   >
                     <FilterIcon className="h-4 w-4" />
                     {isFiltering
@@ -309,6 +315,7 @@ export function GeneratorControls() {
                     className="w-full gap-2"
                     onClick={exportPNG}
                     disabled={!biomeMap || isGenerating || isFiltering}
+                    data-testid="biome-export-png"
                   >
                     <DownloadIcon className="h-4 w-4" />
                     Export PNG
@@ -324,6 +331,7 @@ export function GeneratorControls() {
                     variant="outline"
                     className="w-full gap-2"
                     onClick={copySeed}
+                    data-testid="biome-copy-seed"
                   >
                     <CopyIcon className="h-4 w-4" />
                     Copy Seed
@@ -335,7 +343,10 @@ export function GeneratorControls() {
           </div>
 
           {error && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20 font-mono">
+            <div
+              className="rounded-md bg-destructive/10 p-3 text-sm text-destructive border border-destructive/20 font-mono"
+              data-testid="biome-error"
+            >
               {error}
             </div>
           )}

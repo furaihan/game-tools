@@ -50,6 +50,7 @@ function HomePage() {
               <Link
                 key={tool.href}
                 to={tool.href}
+                data-testid={`tool-card-${tool.href.replace(/^\//, '').replace(/\//g, '-')}`}
                 className="group block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
               >
                 <Card className="relative flex h-full flex-col overflow-hidden p-6 transition-all duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-lg">

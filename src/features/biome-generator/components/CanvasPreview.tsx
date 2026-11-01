@@ -157,6 +157,7 @@ export function CanvasPreview() {
           >
             <canvas
               ref={canvasRef}
+              data-testid="biome-canvas"
               className={`block shadow-2xl transition-opacity duration-300 ${
                 isGenerating || isFiltering || isGeneratingRivers ? 'opacity-50' : 'opacity-100'
               }`}

@@ -24,7 +24,10 @@ function OptionRowImpl({ option, currentValueIndex, isDisabled, isReadOnly }: Op
   const description = getDescription(option)
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-card text-card-foreground shadow-sm gap-4 transition-all">
+    <div
+      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border bg-card text-card-foreground shadow-sm gap-4 transition-all"
+      data-testid={`sandbox-option-${option.option}`}
+    >
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <span className="font-semibold">{getDisplayName(option)}</span>

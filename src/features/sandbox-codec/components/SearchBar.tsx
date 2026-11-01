@@ -15,6 +15,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
         className="pl-9"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        data-testid="codec-search"
       />
     </div>
   )

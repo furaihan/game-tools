@@ -38,7 +38,7 @@ function SandboxCodecView() {
   } = useSandboxCodec()
 
   return (
-    <div className="bg-background text-foreground pb-20 w-full">
+    <div className="bg-background text-foreground pb-20 w-full" data-testid="sandbox-codec">
       <Toaster position="top-center" richColors />
 
       <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8">
@@ -48,11 +48,11 @@ function SandboxCodecView() {
             <p className="text-muted-foreground mt-1">7 Days to Die V3.0 &bull; Encode and Decode Server Presets</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleRandomizeAll} size="sm">
+            <Button variant="outline" onClick={handleRandomizeAll} size="sm" data-testid="codec-randomize-all">
               <ShuffleIcon className="w-4 h-4 mr-2" />
               Randomize
             </Button>
-            <Button variant="outline" onClick={resetAll} size="sm">
+            <Button variant="outline" onClick={resetAll} size="sm" data-testid="codec-reset-all">
               <RefreshCwIcon className="w-4 h-4 mr-2" />
               Reset All
             </Button>
@@ -64,11 +64,11 @@ function SandboxCodecView() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="decode">
+            <TabsTrigger value="decode" data-testid="codec-tab-decode">
               <Code2Icon className="w-4 h-4 mr-2" />
               Decode Mode
             </TabsTrigger>
-            <TabsTrigger value="encode">
+            <TabsTrigger value="encode" data-testid="codec-tab-encode">
               <Settings2Icon className="w-4 h-4 mr-2" />
               Encode / Edit All
             </TabsTrigger>

@@ -43,6 +43,7 @@ function OptionControlImpl({ option, currentValueIndex, isDisabled, isReadOnly }
           onCheckedChange={(checked) => {
             setValue(option.option, checked ? 1 : 0)
           }}
+          data-testid={`sandbox-value-${option.option}`}
         />
         <Label className="text-sm font-medium">
           {isChecked ? 'Enabled' : 'Disabled'}
@@ -63,10 +64,14 @@ function OptionControlImpl({ option, currentValueIndex, isDisabled, isReadOnly }
         className="h-8 w-8 flex-shrink-0"
         onClick={() => setValue(option.option, safeIndex - 1)}
         disabled={safeIndex === 0 || isDisabled}
+        data-testid={`sandbox-dec-${option.option}`}
       >
         <ChevronLeftIcon className="h-4 w-4" />
       </Button>
-      <div className={`w-[130px] text-center font-medium text-sm px-2 py-1.5 rounded-md border ${!isDefault ? 'border-primary bg-primary/5' : 'border-transparent'}`}>
+      <div
+        className={`w-[130px] text-center font-medium text-sm px-2 py-1.5 rounded-md border ${!isDefault ? 'border-primary bg-primary/5' : 'border-transparent'}`}
+        data-testid={`sandbox-value-${option.option}`}
+      >
         {getDisplayAtIndex(valueSet, currentValueIndex)}
         {isDefault && <span className="text-muted-foreground text-xs font-normal block">(Default)</span>}
       </div>
@@ -76,6 +81,7 @@ function OptionControlImpl({ option, currentValueIndex, isDisabled, isReadOnly }
         className="h-8 w-8 flex-shrink-0"
         onClick={() => setValue(option.option, safeIndex + 1)}
         disabled={safeIndex === values.length - 1 || isDisabled}
+        data-testid={`sandbox-inc-${option.option}`}
       >
         <ChevronRightIcon className="h-4 w-4" />
       </Button>
