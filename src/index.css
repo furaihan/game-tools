@@ -162,6 +162,45 @@
   }
 }
 
+/* The survey sheet is inked: the headline is unmasked from its top edge down,
+   like a plotter laying down type. */
+@keyframes plot-heading {
+  from {
+    opacity: 0;
+    clip-path: inset(-0.2em -0.4em 100% -0.4em);
+    transform: translate3d(0, 7px, 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(-0.2em -0.4em -0.2em -0.4em);
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Everything else that settles on the sheet rises a few pixels into place. */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* A probe answering the pointer: one ring, out and gone. */
+@keyframes probe-ping {
+  from {
+    opacity: 0.8;
+    transform: scale(0.35);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
 @utility scrollbar-thin {
   &::-webkit-scrollbar {
     width: 4px;
@@ -213,4 +252,25 @@
 
 @utility animate-dice-spin {
   animation: dice-spin 400ms ease-out;
+}
+
+@utility animate-plot-heading {
+  animation: plot-heading 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility animate-sheet-in {
+  animation: sheet-in 0.56s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* Rendered only when motion is welcome; see useReducedMotion in the page. */
+@utility animate-probe-ping {
+  animation: probe-ping 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

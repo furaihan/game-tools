@@ -87,9 +87,9 @@ export default function App() {
                   <Gamepad2Icon className="h-4 w-4" />
                 </span>
                 <span className="flex items-baseline gap-2">
-                  <h1 className="text-sm font-bold tracking-tight">
+                  <span className="text-sm font-bold tracking-tight">
                     Game Tools<span className="text-primary">.</span>
-                  </h1>
+                  </span>
                 </span>
               </Link>
 
