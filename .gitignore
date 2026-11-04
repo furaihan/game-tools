@@ -38,6 +38,5 @@ graphify-out/
 *.zip
 
 .vscode/
-.zed/
 .playwright-mcp/
 .impeccable/
