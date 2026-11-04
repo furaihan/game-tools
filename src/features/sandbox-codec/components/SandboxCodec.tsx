@@ -5,6 +5,8 @@ import { ShuffleIcon, RefreshCwIcon, Code2Icon, Settings2Icon } from 'lucide-rea
 import { LiveCodeCard } from './LiveCodeCard'
 import { SearchBar } from './SearchBar'
 import { DecodePanel } from './DecodePanel'
+import { PresetPicker } from './PresetPicker'
+import { ActivePresetNote } from './ActivePresetNote'
 import { EncodePanel } from './EncodePanel'
 import { SandboxCodecProvider, useSandboxCodec } from '@/features/sandbox-codec/context/SandboxCodecContext'
 
@@ -45,9 +47,10 @@ function SandboxCodecView() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Sandbox Options Codec</h1>
-            <p className="text-muted-foreground mt-1">7 Days to Die V3.0 &bull; Encode and Decode Server Presets</p>
+            <p className="text-muted-foreground mt-1">7 Days to Die V3.4 &bull; Encode and Decode Server Presets</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <PresetPicker />
             <Button variant="outline" onClick={handleRandomizeAll} size="sm" data-testid="codec-randomize-all">
               <ShuffleIcon className="w-4 h-4 mr-2" />
               Randomize
@@ -60,6 +63,7 @@ function SandboxCodecView() {
         </div>
 
         <LiveCodeCard currentCode={currentCode} onCopy={() => copyToClipboard(currentCode)} />
+        <ActivePresetNote />
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

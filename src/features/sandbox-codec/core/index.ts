@@ -28,6 +28,7 @@ export {
   getValueSet,
   getDefaultIndex,
   createDefaultState,
+  createStateFromValues,
   applyDisabledCascade,
 } from "./sandbox-option-registry";
 
@@ -42,5 +43,19 @@ export {
   decodeCodeToPreset,
 } from "./sandbox-option-codec";
 
+export type { SandboxPreset, SandboxPresetGroup } from "./sandbox-presets.data";
+export {
+  SANDBOX_PRESETS,
+  SANDBOX_PRESETS_BY_ID,
+  getSandboxPreset,
+  getPresetValues,
+  findPresetByCode,
+  isSamePresetCode,
+  getPresetName,
+  getPresetDescription,
+  getPresetGroupName,
+} from "./sandbox-presets.data";
+
 export { localizationMap } from "./localization.data";
 export { getEnumName, getDisplayName, getDescription } from "./localization";
+

@@ -726,7 +726,7 @@ export const SANDBOX_OPTION_DEFINITIONS: SandboxOptionDefinition[] = [
     optionName: "Loot Max Tier",
     categoryName: "Resources",
     valueSetName: "ItemTierOptions",
-    defaultValue: 6,
+    defaultValue: -1,
   },
   {
     type: "float",
@@ -943,7 +943,7 @@ export const SANDBOX_OPTION_DEFINITIONS: SandboxOptionDefinition[] = [
     optionName: "Crafting Max Tier",
     categoryName: "Crafting",
     valueSetName: "ItemTierOptions",
-    defaultValue: 6,
+    defaultValue: -1,
   },
   {
     type: "int",
@@ -1178,7 +1178,7 @@ export const SANDBOX_OPTION_DEFINITIONS: SandboxOptionDefinition[] = [
     optionName: "Trader Max Tier",
     categoryName: "Traders",
     valueSetName: "ItemTierOptions",
-    defaultValue: 6,
+    defaultValue: -1,
   },
   {
     type: "float",

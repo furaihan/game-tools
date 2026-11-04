@@ -3,6 +3,7 @@ import { SANDBOX_OPTION_DEFINITIONS } from "./sandbox-option-definitions.data";
 import { SANDBOX_OPTION_VALUE_SETS } from "./sandbox-option-value-sets.data";
 import type { SandboxOptionDefinition, SandboxOptionState } from "./sandbox-option-definition.types";
 import { getValueIndex } from "./sandbox-option-value-set.types";
+import type { SandboxPresetValues } from "./sandbox-option-codec";
 
 /** `SandboxOption -> definition`, equivalent to `SandboxOptionManager.SandboxOptionsDict`. */
 export const optionsByEnum: ReadonlyMap<SandboxOption, SandboxOptionDefinition> = new Map(
@@ -74,4 +75,25 @@ export function applyDisabledCascade(
     if (!targetState) continue;
     targetState.isEnabled = matches;
   }
+}
+
+/**
+ * Builds a full state from a decoded preset: every option starts at its default,
+ * the preset's entries are overlaid, and the disabled-option cascade is settled
+ * over the whole map.
+ *
+ * The cascade has to run for options the preset never mentions too, because a
+ * preset that changes a parent option must still disable its dependants, and an
+ * option re-enabled further down the map must re-apply its own cascade before
+ * the final `isEnabled` values are read. Hence two passes.
+ */
+export function createStateFromValues(values: SandboxPresetValues): Map<SandboxOption, SandboxOptionState> {
+  const state = createDefaultState();
+  for (const [option, index] of values) {
+    const entry = state.get(option);
+    if (entry) entry.currentIndex = index;
+  }
+  for (const [option, entry] of state) applyDisabledCascade(state, option, entry.currentIndex);
+  for (const [option, entry] of state) applyDisabledCascade(state, option, entry.currentIndex);
+  return state;
 }

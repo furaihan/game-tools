@@ -17,7 +17,9 @@ export function getDisplayName(def: SandboxOptionDefinition): string {
   if (def.overrideOptionName) {
     return localizationMap[def.overrideOptionName] ?? def.optionName
   }
-  return def.optionName
+  // BaseSandboxOption.OptionNameText prefers "go<Option>" and falls back to the
+  // name the option was registered with, which is what optionName holds here.
+  return localizationMap[`go${getEnumName(def.option)}`] ?? def.optionName
 }
 
 export function getDescription(def: SandboxOptionDefinition): string {

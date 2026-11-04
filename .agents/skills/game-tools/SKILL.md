@@ -114,6 +114,8 @@ src/
 │       │   ├── OptionRow.tsx
 │       │   ├── OptionControl.tsx
 │       │   ├── LiveCodeCard.tsx
+│       │   ├── PresetPicker.tsx             — Official/difficulty preset select
+│       │   ├── ActivePresetNote.tsx         — Loaded preset name, description, copy
 │       │   ├── EncodePanel.tsx
 │       │   └── DecodePanel.tsx
 │       ├── context/
@@ -127,6 +129,7 @@ src/
 │           ├── sandbox-option-value-sets.data.ts    — SANDBOX_OPTION_VALUE_SETS
 │           ├── sandbox-option-registry.ts      — optionsByEnum, optionsByCategory, getDefinition, applyDisabledCascade
 │           ├── sandbox-option-codec.ts         — encodePresetToCode / decodeCodeToPreset
+│           ├── sandbox-presets.data.ts         — SANDBOX_PRESETS (15 game-issued codes) + name/description
 │           ├── localization.ts                 — getEnumName, getDisplayName, getDescription
 │           └── localization.data.ts            — localizationMap
 │
@@ -365,6 +368,7 @@ Sandbox codes use a simple encoding scheme:
 - **Decode warnings** — Invalid entries, unknown option IDs, and out-of-range values are reported without crashing
 - **URL sync** — `?code=` search param synced to the route for shareable links
 - **Copy to clipboard** — One-click copy of the encoded code
+- **Official presets** — One-click picker for the 15 presets the game ships (`SANDBOX_PRESETS`): the 10 `xuiSandboxOfficial*` modes plus the 5 difficulty levels. Selecting one loads its state, switches to Decode Mode so the read-only rows show what it changes, and shows its name/description under the live code card. Editing any value, randomizing, or resetting drops the picker back to "Custom / edited". A preset is recognised by its decoded values, not its code string: 7 of the 15 codes carry an entry at its default value and the game does not order entries, so the canonical code the URL carries is not textually the shipped one.
 
 ### Core Module
 **`src/features/sandbox-codec/core/sandbox-option-codec.ts`**: Full encode/decode implementation. Exports `encodePresetToCode(values)` and `decodeCodeToPreset(code)`, plus `CODEC_VERSION` and the alpha-index helpers (`indexToAlpha`, `alphaToIndex`, etc.). Option lookups and the disabled-option dependency cascade live in `sandbox-option-registry.ts` (`optionsByEnum`, `optionsByCategory`, `getDefinition`, `getValueSet`, `getDefaultIndex`, `createDefaultState`, `applyDisabledCascade`).
@@ -380,6 +384,8 @@ Sandbox codes use a simple encoding scheme:
 - `OptionRow.tsx` — Single option row with controls (React.memo)
 - `OptionControl.tsx` — Dropdown/slider/toggle based on option type (React.memo)
 - `LiveCodeCard.tsx` — Shows live generated code with copy button
+- `PresetPicker.tsx` — `Select` grouping the shipped presets under Official / Difficulty
+- `ActivePresetNote.tsx` — Loaded preset's name, description and changed-option count; renders nothing for a custom set
 - `EncodePanel.tsx` — All 152 options grouped by 9 categories (Edit All mode)
 - `DecodePanel.tsx` — Decoded changed options + paste input (Decode mode)
 
@@ -491,6 +497,8 @@ Keep these stable — they are the contract between the UI and any browser autom
 | `generating-overlay` | Blocking progress dialog |
 | `river-controls`, `river-branch-count`, `river-main-stem-width`, `river-branch-width`, `river-roughness`, `river-water-color`, `river-water-color-hex`, `river-generate`, `river-clear` | River panel |
 | `sandbox-codec`, `codec-randomize-all`, `codec-reset-all`, `codec-search`, `codec-live-code`, `codec-length`, `codec-copy`, `codec-tab-decode`, `codec-tab-encode` | Sandbox codec shell |
+| `codec-preset-trigger`, `codec-preset-option-<id>` | Official preset select (`codec-preset-option-official.chibi-mode`, `codec-preset-option-difficulty.insane`, `codec-preset-option-custom`) |
+| `codec-preset-note`, `codec-preset-name`, `codec-preset-description`, `codec-preset-copy` | Loaded-preset summary line; absent when no preset is active |
 | `sandbox-option-<OptionName>`, `sandbox-value-<OptionName>`, `sandbox-inc-<OptionName>`, `sandbox-dec-<OptionName>` | Per-option row / value / steppers |
 
 When adding a tool, give every interactive control a `data-testid` following `<tool>-<control>` and

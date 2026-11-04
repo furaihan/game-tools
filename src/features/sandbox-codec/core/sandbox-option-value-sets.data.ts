@@ -184,7 +184,8 @@ export const SANDBOX_OPTION_VALUE_SETS: Record<string, SandboxOptionValueSet> = 
   },
   ItemTierOptions: {
     type: "int",
-    values: [1, 2, 3, 4, 5, 6],
+    values: [-1, 1, 2, 3, 4, 5, 6],
+    displayValues: ["xuiDefault"],
   },
   DewCollectorInput: {
     type: "float",

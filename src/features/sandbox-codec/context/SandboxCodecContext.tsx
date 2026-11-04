@@ -2,8 +2,9 @@ import { createContext, use, useState, useMemo, useCallback, useEffect, useRef, 
 import { SandboxOption } from '@/features/sandbox-codec/core/sandbox-option.enum'
 import type { SandboxOptionDefinition, SandboxOptionState } from '@/features/sandbox-codec/core/sandbox-option-definition.types'
 import { SANDBOX_OPTION_DEFINITIONS } from '@/features/sandbox-codec/core/sandbox-option-definitions.data'
-import { optionsByCategory, getDefinition, getValueSet, getDefaultIndex, createDefaultState } from '@/features/sandbox-codec/core/sandbox-option-registry'
+import { optionsByCategory, getDefinition, getValueSet, getDefaultIndex, createDefaultState, createStateFromValues } from '@/features/sandbox-codec/core/sandbox-option-registry'
 import { encodePresetToCode, decodeCodeToPreset } from '@/features/sandbox-codec/core/sandbox-option-codec'
+import { getSandboxPreset, getPresetName, findPresetByCode } from '@/features/sandbox-codec/core/sandbox-presets.data'
 import { getDisplayName, getEnumName } from '@/features/sandbox-codec/core/localization'
 import { toast } from 'sonner'
 
@@ -41,6 +42,7 @@ interface SandboxActionsContextValue {
   setSearchQuery: (value: string) => void
   setActiveTab: (value: string) => void
   handleDecode: () => void
+  applyPreset: (id: string) => void
   resetAll: () => void
   handleRandomizeAll: () => void
   copyToClipboard: (text: string) => void
@@ -56,6 +58,7 @@ interface SandboxUIContextValue {
   searchQuery: string
   activeTab: string
   currentCode: string
+  activePresetId: string | null
 }
 
 interface SandboxDerivedContextValue {
@@ -81,6 +84,7 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
   const [decodeInput, setDecodeInput] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState('decode')
+  const [activePresetId, setActivePresetId] = useState<string | null>(null)
 
   const currentCode = useMemo(() => {
     const changed = new Map<SandboxOption, number>()
@@ -104,18 +108,8 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
 
   useEffect(() => {
     if (urlCode && !initializedFromUrl.current) {
-      const decoded = decodeCodeToPreset(urlCode)
-      const newState = createDefaultState()
-      for (const [opt, idx] of decoded) {
-        const entry = newState.get(opt)
-        if (entry) {
-          newState.set(opt, { ...entry, currentIndex: idx })
-        }
-      }
-      for (const [opt, s] of newState) {
-        applyCascade(newState, opt, s.currentIndex)
-      }
-      setState(newState)
+      setState(createStateFromValues(decodeCodeToPreset(urlCode)))
+      setActivePresetId(findPresetByCode(urlCode)?.id ?? null)
       setDecodeInput(urlCode)
       initializedFromUrl.current = true
     }
@@ -137,6 +131,8 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
   }, [decodeInput])
 
   const setValue = useCallback((option: SandboxOption, valueIndex: number) => {
+    // Hand-editing a value means the result is no longer the shipped preset.
+    setActivePresetId(null)
     setState((prev) => {
       const next = new Map(prev)
       const entry = next.get(option)
@@ -153,24 +149,29 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
       toast.error('Please enter a code to decode.')
       return
     }
-    const decoded = decodeCodeToPreset(trimmed)
-    const newState = createDefaultState()
-    for (const [opt, idx] of decoded) {
-      const entry = newState.get(opt)
-      if (entry) {
-        newState.set(opt, { ...entry, currentIndex: idx })
-      }
-    }
-    for (const [opt, s] of newState) {
-      applyCascade(newState, opt, s.currentIndex)
-    }
-    setState(newState)
+    initializedFromUrl.current = true
+    setState(createStateFromValues(decodeCodeToPreset(trimmed)))
+    setActivePresetId(findPresetByCode(trimmed)?.id ?? null)
     toast.success('Successfully decoded Sandbox Code.')
+  }, [])
+
+  const applyPreset = useCallback((id: string) => {
+    const preset = getSandboxPreset(id)
+    if (!preset) return
+    // The state is now authoritative: without this, the URL effect would adopt
+    // the code this very action is about to write and rebuild from it.
+    initializedFromUrl.current = true
+    setState(createStateFromValues(decodeCodeToPreset(preset.code)))
+    setDecodeInput(preset.code)
+    setActivePresetId(preset.id)
+    setActiveTab('decode')
+    toast.success(`Loaded the ${getPresetName(preset)} preset.`)
   }, [])
 
   const resetAll = useCallback(() => {
     setState(createDefaultState())
     setDecodeInput('')
+    setActivePresetId(null)
     setSearchQuery('')
     toast.info('Reset to default values.')
   }, [])
@@ -203,6 +204,7 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
     }
 
     setState(newState)
+    setActivePresetId(null)
     toast.info('Randomized all options.')
   }, [])
 
@@ -271,10 +273,11 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
     setSearchQuery,
     setActiveTab,
     handleDecode,
+    applyPreset,
     resetAll,
     handleRandomizeAll,
     copyToClipboard,
-  }), [setValue, handleDecode, resetAll, handleRandomizeAll, copyToClipboard])
+  }), [setValue, handleDecode, applyPreset, resetAll, handleRandomizeAll, copyToClipboard])
 
   const valuesValue = useMemo<SandboxValuesContextValue>(() => ({
     state,
@@ -286,7 +289,8 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
     searchQuery,
     activeTab,
     currentCode,
-  }), [decodeInput, searchQuery, activeTab, currentCode])
+    activePresetId,
+  }), [decodeInput, searchQuery, activeTab, currentCode, activePresetId])
 
   const derivedValue = useMemo<SandboxDerivedContextValue>(() => ({
     groupedOptions,
