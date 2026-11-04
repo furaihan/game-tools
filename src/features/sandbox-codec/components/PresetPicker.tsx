@@ -43,35 +43,54 @@ export function PresetPicker() {
   const { activePresetId } = useSandboxUI()
 
   return (
-    <Select
-      items={ITEMS}
-      value={activePresetId ?? CUSTOM}
-      onValueChange={(value) => {
-        if (value && value !== CUSTOM) applyPreset(value)
-      }}
-    >
-      <SelectTrigger size="sm" className="w-full sm:w-56" data-testid="codec-preset-trigger">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={CUSTOM} data-testid="codec-preset-option-custom">
-          Custom / edited
-        </SelectItem>
-        {GROUP_ORDER.map((group) => {
-          const presets = SANDBOX_PRESETS.filter((preset) => preset.group === group)
-          if (presets.length === 0) return null
-          return (
-            <SelectGroup key={group}>
-              <SelectLabel>{getPresetGroupName(group)}</SelectLabel>
-              {presets.map((preset) => (
-                <SelectItem key={preset.id} value={preset.id} data-testid={`codec-preset-option-${preset.id}`}>
-                  {getPresetName(preset)}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          )
-        })}
-      </SelectContent>
-    </Select>
+    <div className="min-w-0 flex-1">
+      <span
+        id="codec-preset-label"
+        className="font-mono text-[9px] uppercase tracking-[0.24em] text-foreground/85 dark:text-foreground/70"
+      >
+        Start from a shipped preset
+      </span>
+      <Select
+        items={ITEMS}
+        value={activePresetId ?? CUSTOM}
+        onValueChange={(value) => {
+          if (value && value !== CUSTOM) applyPreset(value)
+        }}
+      >
+        <SelectTrigger
+          size="sm"
+          aria-labelledby="codec-preset-label"
+          className="mt-2 h-8 w-full rounded-none border-foreground/25 bg-transparent font-mono text-[11px] dark:bg-transparent dark:hover:bg-foreground/[0.06]"
+          data-testid="codec-preset-trigger"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="rounded-none">
+          <SelectItem value={CUSTOM} data-testid="codec-preset-option-custom">
+            Custom / edited
+          </SelectItem>
+          {GROUP_ORDER.map((group) => {
+            const presets = SANDBOX_PRESETS.filter((preset) => preset.group === group)
+            if (presets.length === 0) return null
+            return (
+              <SelectGroup key={group}>
+                <SelectLabel className="font-mono text-[9px] uppercase tracking-[0.2em]">
+                  {getPresetGroupName(group)}
+                </SelectLabel>
+                {presets.map((preset) => (
+                  <SelectItem
+                    key={preset.id}
+                    value={preset.id}
+                    data-testid={`codec-preset-option-${preset.id}`}
+                  >
+                    {getPresetName(preset)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            )
+          })}
+        </SelectContent>
+      </Select>
+    </div>
   )
 }

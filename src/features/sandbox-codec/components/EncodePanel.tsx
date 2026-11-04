@@ -1,5 +1,4 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import { Badge } from '@/shared/ui/badge'
 import { OptionRow } from './OptionRow'
 import { useSandboxValues, useSandboxDerived } from '@/features/sandbox-codec/context/SandboxCodecContext'
 import { getDefaultIndex } from '@/features/sandbox-codec/core/sandbox-option-registry'
@@ -11,16 +10,18 @@ export function EncodePanel() {
 
   if (categoryKeys.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">
-        No options matched your search.
+      <div className="border border-dashed border-foreground/20 px-6 py-12 text-center">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-foreground/85 dark:text-foreground/70">
+          No option matches the filter
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-      <Tabs defaultValue={categoryKeys[0]} className="w-full">
-        <TabsList className="flex flex-wrap w-full h-auto gap-2 bg-transparent justify-start mb-6 px-0">
+    <div className="animate-fade-slide">
+      <Tabs defaultValue={categoryKeys[0]} className="w-full gap-0">
+        <TabsList className="scrollbar-thin flex h-auto w-full flex-wrap justify-start gap-x-1 gap-y-1 overflow-x-auto rounded-none border-b border-foreground/10 p-0 pb-2">
           {categoryKeys.map((cat) => {
             const opts = filteredGroups[cat]
             const modifiedCount = opts.filter((o) => {
@@ -31,21 +32,19 @@ export function EncodePanel() {
               <TabsTrigger
                 key={cat}
                 value={cat}
-                className="data-active:bg-primary data-active:text-primary-foreground border rounded-full px-4 py-2 flex items-center gap-2 transition-colors"
+                className="h-auto flex-none gap-1.5 rounded-none border border-transparent px-2 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-foreground/85 dark:text-foreground/70 transition-colors hover:text-foreground data-active:border-foreground/25 data-active:bg-foreground/[0.06] data-active:text-foreground data-active:shadow-none"
               >
                 {cat}
                 {modifiedCount > 0 && (
-                  <Badge variant="secondary" className="rounded-full px-1.5 py-0.5 text-[10px] bg-background/50">
-                    {modifiedCount}
-                  </Badge>
+                  <span className="tabular-nums text-primary">{modifiedCount}</span>
                 )}
               </TabsTrigger>
             )
           })}
         </TabsList>
         {categoryKeys.map((cat) => (
-          <TabsContent key={cat} value={cat} className="mt-0 outline-none">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+          <TabsContent key={cat} value={cat} className="mt-1 outline-none">
+            <div>
               {filteredGroups[cat].map((def) => (
                 <OptionRow
                   key={def.option}

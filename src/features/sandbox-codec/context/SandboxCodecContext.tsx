@@ -3,7 +3,7 @@ import { SandboxOption } from '@/features/sandbox-codec/core/sandbox-option.enum
 import type { SandboxOptionDefinition, SandboxOptionState } from '@/features/sandbox-codec/core/sandbox-option-definition.types'
 import { SANDBOX_OPTION_DEFINITIONS } from '@/features/sandbox-codec/core/sandbox-option-definitions.data'
 import { optionsByCategory, getDefinition, getValueSet, getDefaultIndex, createDefaultState, createStateFromValues } from '@/features/sandbox-codec/core/sandbox-option-registry'
-import { encodePresetToCode, decodeCodeToPreset } from '@/features/sandbox-codec/core/sandbox-option-codec'
+import { encodePresetToCode, decodeCodeToPreset, CODEC_VERSION } from '@/features/sandbox-codec/core/sandbox-option-codec'
 import { getSandboxPreset, getPresetName, findPresetByCode } from '@/features/sandbox-codec/core/sandbox-presets.data'
 import { getDisplayName, getEnumName } from '@/features/sandbox-codec/core/localization'
 import { toast } from 'sonner'
@@ -146,13 +146,26 @@ export function SandboxCodecProvider({ urlCode, onCodeChange, children }: Sandbo
   const handleDecode = useCallback(() => {
     const trimmed = decodeInputRef.current.trim()
     if (!trimmed) {
-      toast.error('Please enter a code to decode.')
+      toast.error('Paste a code before decoding.')
       return
     }
+    // The first letter is the format version. A code that does not start with
+    // the current one decodes to nothing, so claiming success would be a lie.
+    if (trimmed[0] !== CODEC_VERSION) {
+      toast.error(
+        `A code starts with its version letter (${CODEC_VERSION}). "${trimmed[0]}" is not a version this tool reads.`,
+      )
+      return
+    }
+    const decoded = decodeCodeToPreset(trimmed)
     initializedFromUrl.current = true
-    setState(createStateFromValues(decodeCodeToPreset(trimmed)))
+    setState(createStateFromValues(decoded))
     setActivePresetId(findPresetByCode(trimmed)?.id ?? null)
-    toast.success('Successfully decoded Sandbox Code.')
+    if (decoded.size === 0) {
+      toast.info('The code is valid but carries no entries: every option stays at its default.')
+    } else {
+      toast.success(`Decoded ${decoded.size} ${decoded.size === 1 ? 'option' : 'options'}.`)
+    }
   }, [])
 
   const applyPreset = useCallback((id: string) => {
